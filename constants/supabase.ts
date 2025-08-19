@@ -1,0 +1,2 @@
+export const supaUrl = 'https://gnocebefypawejuzxvdv.supabase.co'
+export const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdub2NlYmVmeXBhd2VqdXp4dmR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMzUzNzIsImV4cCI6MjA3MDcxMTM3Mn0.AnnyM5USPNCP2qPN_jrL1SCvInwT5aAbi47WXk7GfsQ'
