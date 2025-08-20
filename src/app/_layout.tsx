@@ -14,6 +14,10 @@ export default function mainLayout() {
             <Stack.Screen 
             name="(painel)/profile/page" 
             options={{ headerShown: false }} />
+
+            <Stack.Screen 
+            name="(auth)/salao/page"
+            options={{ headerShown: false }} />
         </Stack>
 
         
