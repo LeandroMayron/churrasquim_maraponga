@@ -1,4 +1,4 @@
-import colors from "@/constants/colors";
+import Colors from "@/constants/Colors";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
@@ -72,7 +72,7 @@ export default function Login() {
           <Ionicons
             name="eye-off"
             size={24}
-            color={colors.gold}
+            color={Colors.gold}
             style={{ position: "absolute", right: 16, top: 38 }}
             onPress={() => setShowPassword(!showPassword)}
           />
@@ -91,12 +91,11 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.black,
+    backgroundColor: Colors.black
   },
   header: {
-    paddingTop: 200,
+    paddingTop: 20,
     alignItems: "center",
-    justifyContent: "center",
   },
   logo: {
     width: 250,
@@ -105,8 +104,9 @@ const styles = StyleSheet.create({
   },
 
   form: {
+    marginTop: 20,
     height: 280,
-    backgroundColor: colors.acafrao,
+    backgroundColor: Colors.acafrao,
     borderRadius: 16,
     paddingTop: 24,
     paddingLeft: 14,
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    color: colors.gold,
+    color: Colors.gold,
     marginBottom: 4,
     fontWeight: "bold",
     fontSize: 16,
@@ -122,14 +122,14 @@ const styles = StyleSheet.create({
 
   input: {
     borderWidth: 1,
-    borderColor: colors.gray,
+    borderColor: Colors.gray,
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
   },
 
   button: {
-    backgroundColor: colors.gold,
+    backgroundColor: Colors.gold,
     padding: 16,
     borderRadius: 8,
     alignItems: "center",
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: colors.acafrao,
+    color: Colors.acafrao,
     fontWeight: "bold",
     fontSize: 16,
   },
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   link: {
     alignItems: "center",
     justifyContent: "center",
-    color: colors.gray,
+    color: Colors.gray,
     textDecorationLine: "underline",
   },
 });

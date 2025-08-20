@@ -1,5 +1,5 @@
 import { useState } from "react";
-import colors from "@/constants/colors";
+import Colors from "@/constants/Colors";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
@@ -55,7 +55,7 @@ export default function Signup() {
             <Ionicons
               name="arrow-back"
               size={24}
-              color={colors.gold}
+              color={Colors.gold}
               style={{ alignSelf: "center", marginTop: 8 }}
             />
           </Pressable>
@@ -97,7 +97,7 @@ export default function Signup() {
               <Ionicons
                 name="eye-off"
                 size={24}
-                color={colors.gold}
+                color={Colors.gold}
                 style={{ position: "absolute", right: 16, top: 38 }}
                 onPress={() => setShowPassword(!showPassword)}
               />
@@ -125,7 +125,7 @@ export default function Signup() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.black,
+    backgroundColor: Colors.black,
     justifyContent: "center",
   },
 
@@ -133,17 +133,17 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: 40,
     height: 40,
-    top: 150,
+    top: 140,
     left: 0,
     alignSelf: "center",
     borderRadius: 8,
     zIndex: 0,
-    backgroundColor: colors.acafrao,
+    backgroundColor: Colors.acafrao,
   },
 
   form: {
     marginTop: -60,
-    backgroundColor: colors.acafrao,
+    backgroundColor: Colors.acafrao,
     padding: 16,
     borderRadius: 16,
     paddingTop: 24,
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    color: colors.gold,
+    color: Colors.gold,
     marginBottom: 4,
     fontWeight: "bold",
     fontSize: 16,
@@ -170,14 +170,14 @@ const styles = StyleSheet.create({
 
   input: {
     borderWidth: 1,
-    borderColor: colors.gray,
+    borderColor: Colors.gray,
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
   },
 
   button: {
-    backgroundColor: colors.gold,
+    backgroundColor: Colors.gold,
     padding: 16,
     borderRadius: 8,
     alignItems: "center",
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: colors.acafrao,
+    color: Colors.acafrao,
     fontWeight: "bold",
     fontSize: 16,
   },
