@@ -12,7 +12,7 @@ const Header = () => {
         </View>
 
         <View style={styles.botao}>
-          <Link href="/" style={styles.link}>
+          <Link href="/(auth)/cardapio/page" style={styles.link}>
             Cardápio
           </Link>
         </View>
