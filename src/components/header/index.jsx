@@ -6,15 +6,21 @@ const Header = () => {
     return (
       <View style={styles.container}>
         <View style={styles.botao}>
-          <Link href="/" style={styles.link}>Mesa</Link>
+          <Link href="/(auth)/salao/page" style={styles.link}>
+            Mesas
+          </Link>
         </View>
 
         <View style={styles.botao}>
-          <Link href="/" style={styles.link}>Cardápio</Link>
+          <Link href="/(auth)/cardapio/page" style={styles.link}>
+            Cardápio
+          </Link>
         </View>
 
         <View style={styles.botao}>
-          <Link href="/" style={styles.link}>Configuração</Link>
+          <Link href="/" style={styles.link}>
+            Configuração
+          </Link>
         </View>
       </View>
     );
