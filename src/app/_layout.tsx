@@ -24,7 +24,7 @@ export default function mainLayout() {
             options={{ headerShown: false }} />
 
             <Stack.Screen 
-            name="(auth)/mesa/index" 
+            name="(auth)/mesa/[id]" 
             options={{ headerShown: false }} />
 
         </Stack>

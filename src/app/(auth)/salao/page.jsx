@@ -1,70 +1,80 @@
-import { View, StyleSheet} from "react-native";
 import Colors from "@/constants/Colors";
-
+import { AntDesign } from "@expo/vector-icons";
+import React, { useState } from "react";
+import {
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 const Salao = () => {
-    return (
-      <View style={style.container}>
+  const [mesas, setMesas] = useState(
+    Array.from({ length: 10 }, (_, i) => i + 1)
+  );
 
-        <View style={style.mesas}>
-            
-        </View>
+  const adicionarMesa = () => {
+    setMesas([...mesas, mesas.length + 1]);
+  };
 
-        <View style={style.mesas}>
-            
-        </View>
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={mesas}
+        keyExtractor={(item) => item.toString()}
+        numColumns={4} // força 4 mesas por linha
+        contentContainerStyle={styles.mesasContainer}
+        renderItem={({ item }) => (
+          <View style={styles.mesa}>
+            <Text style={styles.mesaText}>Mesa {item}</Text>
+          </View>
+        )}
+      />
 
-        <View style={style.mesas}>
-            
-        </View>
+      <TouchableOpacity style={styles.fab} onPress={adicionarMesa}>
+        <AntDesign name="plus" size={32} color={Colors.white} />
+      </TouchableOpacity>
+    </View>
+  );
+};
 
-        <View style={style.mesas}>
-            
-        </View>
-
-        <View style={style.mesas}>
-            
-        </View>
-
-        <View style={style.mesas}>
-            
-        </View>
-
-        <View style={style.mesas}>
-            
-        </View>
-
-        <View style={style.mesas}>
-            
-        </View>
-
-        <View style={style.mesas}>
-            
-        </View>
-
-        <View style={style.mesas}>
-            
-        </View>
-
-      </View>
-    );
-}
-
-const style = StyleSheet.create({
-    container: {
-        backgroundColor: Colors.black,
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-around',
-        gap: 10,
-    },
-
-    mesas: {
-        width: 60,
-        height: 60,
-        marginTop: 10,
-        backgroundColor: Colors.red,
-      }
-})
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.black,
+    justifyContent: "center",
+  },
+  mesasContainer: {
+    padding: 16,
+  },
+  mesa: {
+    backgroundColor: Colors.gold,
+    borderRadius: 8,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1, // divide igualmente o espaço
+    margin: 6,
+    minWidth: 60,
+  },
+  mesaText: {
+    color: Colors.black,
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  fab: {
+    position: "absolute",
+    right: 24,
+    bottom: 32,
+    backgroundColor: Colors.acafrao,
+    borderRadius: 32,
+    width: 64,
+    height: 64,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 4,
+  },
+});
 
 export default Salao;
