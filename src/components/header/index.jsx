@@ -6,8 +6,8 @@ const Header = () => {
     return (
       <View style={styles.container}>
         <View style={styles.botao}>
-          <Link href="/(auth)/salao/page" style={styles.link}>
-            Mesas
+          <Link href="/(auth)/mesa/index" style={styles.link}>
+            Mesa
           </Link>
         </View>
 

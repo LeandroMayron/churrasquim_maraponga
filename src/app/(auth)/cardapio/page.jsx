@@ -1,142 +1,59 @@
-import { SafeAreaView, View, Text, StyleSheet, ScrollView } from "react-native";
 import Colors from "@/constants/Colors";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+
+const MENU_URL =
+  "https://6644-fontend.github.io/menu-churrasquinho-maraponga/menu.json";
 
 const Cardapio = () => {
+  const [menu, setMenu] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(MENU_URL)
+      .then((response) => response.json())
+      .then((data) => {
+        // Transforma o objeto em array [{categoria, itens}]
+        const menuArray = Object.entries(data).map(([categoria, itens]) => ({
+          categoria,
+          itens,
+        }));
+        setMenu(menuArray);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setLoading(false);
+        Alert.alert("Erro ao carregar cardápio", err.message);
+      });
+  }, []);
+
+  if (loading) {
+    return <ActivityIndicator color={Colors.gold} style={{ flex: 1 }} />;
+  }
+
   return (
     <SafeAreaView>
       <ScrollView>
         <View style={styles.container}>
-          <Text style={styles.titulo}>Bolinhas</Text>
-          <View style={styles.item}>
-            <Text style={styles.text}>Bolinha de Frango</Text>
-            <Text style={styles.preco}>R$ 16,99</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>Bolinha de Carne de sol</Text>
-            <Text style={styles.preco}>R$ 16,99</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>Bolinha de peixe</Text>
-            <Text style={styles.preco}>R$ 16,99</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>Bolinha de calabresa com queijo</Text>
-            <Text style={styles.preco}>R$ 16,99</Text>
-          </View>
-
-          <Text style={styles.titulo}>Pastelzinho</Text>
-          <View style={styles.item}>
-            <Text style={styles.text}>Pastel de Queijo</Text>
-            <Text style={styles.preco}>R$ 21,99</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>Pastel de carne de sol</Text>
-            <Text style={styles.preco}>R$ 21,99</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>Pastel de frango</Text>
-            <Text style={styles.preco}>R$ 21,99</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>Pastel de calabresa com queijo</Text>
-            <Text style={styles.preco}>R$ 21,99</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>Pastel de arraiá</Text>
-            <Text style={styles.preco}>R$ 21,99</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>Pastel de camarão</Text>
-            <Text style={styles.preco}>R$ 21,99</Text>
-          </View>
-
-          <Text style={styles.titulo}>Entradas</Text>
-          <View style={styles.item}>
-            <Text style={styles.text}>Batata frita</Text>
-            <Text style={styles.preco}>R$ 15,90</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>macaxeira</Text>
-            <Text style={styles.preco}>R$ 15,90</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>baião</Text>
-            <Text style={styles.preco}>R$ 15,90</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>torresmo</Text>
-            <Text style={styles.preco}>R$ 15,90</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>empanado de camarão</Text>
-            <Text style={styles.preco}>R$ 15,90</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>calabresa acebolada</Text>
-            <Text style={styles.preco}>R$ 15,90</Text>
-          </View>
-
-          <Text style={styles.titulo}>Quinta do caranguejo</Text>
-          <View style={styles.item}>
-            <Text style={styles.text}>03 unidades</Text>
-            <Text style={styles.preco}>R$ 26,99</Text>
-          </View>
-
-          <Text style={styles.titulo}>aos domingos</Text>
-          <View style={styles.item}>
-            <Text style={styles.text}>Panelada</Text>
-            <Text style={styles.preco}>R$ 29,90</Text>
-          </View>
-
-          <Text style={styles.titulo}>Bebidas</Text>
-          <View style={styles.item}>
-            <Text style={styles.text}>cerveja buchudinha</Text>
-            <Text style={styles.preco}>R$ 5,00</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>heineken 330ml long neck</Text>
-            <Text style={styles.preco}>R$ 9,00</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>stella 330ml long neck</Text>
-            <Text style={styles.preco}>R$ 9,00</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>skoll beats</Text>
-            <Text style={styles.preco}>R$ 10,00</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>whisky black white dose</Text>
-            <Text style={styles.preco}>R$ 8,00</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>ypióca dose</Text>
-            <Text style={styles.preco}>R$ 3,50</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>ypióca meia meiota (copo)</Text>
-            <Text style={styles.preco}>R$ 7,00</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>ypióca meiota</Text>
-            <Text style={styles.preco}>R$ 12,00</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>água de côco (jarra)</Text>
-            <Text style={styles.preco}>R$ 12,00</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>sucos</Text>
-            <Text style={styles.preco}>R$ 7,00</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>água com gás</Text>
-            <Text style={styles.preco}>R$ 3,00</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.text}>água sem gás</Text>
-            <Text style={styles.preco}>R$ 2,00</Text>
-          </View>
+          {menu.map((categoria, idx) => (
+            <View key={idx}>
+              <Text style={styles.titulo}>{categoria.categoria}</Text>
+              {categoria.itens.map((item, i) => (
+                <View style={styles.item} key={i}>
+                  <Text style={styles.text}>{item.name}</Text>
+                  <Text style={styles.preco}>R$ {item.price}</Text>
+                </View>
+              ))}
+            </View>
+          ))}
         </View>
       </ScrollView>
     </SafeAreaView>

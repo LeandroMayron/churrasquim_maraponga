@@ -19,6 +19,14 @@ export default function mainLayout() {
             name="(auth)/salao/page" 
             options={{ headerShown: false }} />
 
+            <Stack.Screen 
+            name="(auth)/cardapio/page" 
+            options={{ headerShown: false }} />
+
+            <Stack.Screen 
+            name="(auth)/mesa/index" 
+            options={{ headerShown: false }} />
+
         </Stack>
 
         
