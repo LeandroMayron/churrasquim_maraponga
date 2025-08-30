@@ -7,7 +7,15 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Dimensions,
 } from "react-native";
+import { MotiView } from "moti";
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
+const NUM_COLUMNS = 4;
+const ITEM_MARGIN = 12;
+const ITEM_WIDTH =
+  (SCREEN_WIDTH - ITEM_MARGIN * (NUM_COLUMNS + 1)) / NUM_COLUMNS;
 
 const Salao = () => {
   const [mesas, setMesas] = useState(
@@ -18,17 +26,32 @@ const Salao = () => {
     setMesas([...mesas, mesas.length + 1]);
   };
 
+  const handleMesaPress = (mesaNumber: number) => {
+    console.log(`Mesa ${mesaNumber} clicada`);
+  };
+
   return (
     <View style={styles.container}>
       <FlatList
         data={mesas}
         keyExtractor={(item) => item.toString()}
-        numColumns={4} // força 4 mesas por linha
+        numColumns={NUM_COLUMNS}
         contentContainerStyle={styles.mesasContainer}
         renderItem={({ item }) => (
-          <View style={styles.mesa}>
-            <Text style={styles.mesaText}>Mesa {item}</Text>
-          </View>
+          <TouchableOpacity
+            onPress={() => handleMesaPress(item)}
+            activeOpacity={0.8}
+          >
+            <MotiView
+              from={{ scale: 1 }}
+              animate={{ scale: 1 }}
+              whileTap={{ scale: 0.9 }}
+              transition={{ type: "timing", duration: 150 }}
+              style={[styles.mesa, { width: ITEM_WIDTH }]}
+            >
+              <Text style={styles.mesaText}>Mesa {item}</Text>
+            </MotiView>
+          </TouchableOpacity>
         )}
       />
 
@@ -46,7 +69,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   mesasContainer: {
-    padding: 16,
+    padding: 12,
+    alignItems: "center",
   },
   mesa: {
     backgroundColor: Colors.gold,
@@ -54,9 +78,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: "center",
     justifyContent: "center",
-    flex: 1, // divide igualmente o espaço
-    margin: 6,
-    minWidth: 60,
+    margin: ITEM_MARGIN / 2,
   },
   mesaText: {
     color: Colors.black,
