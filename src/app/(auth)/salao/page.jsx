@@ -26,7 +26,7 @@ const Salao = () => {
     setMesas([...mesas, mesas.length + 1]);
   };
 
-  const handleMesaPress = (mesaNumber: number) => {
+  const handleMesaPress = (mesaNumber) => {
     console.log(`Mesa ${mesaNumber} clicada`);
   };
 
