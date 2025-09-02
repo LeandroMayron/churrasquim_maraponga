@@ -6,15 +6,16 @@ import {
   StyleSheet,
   Image,
   TextInput,
-  Pressable,
   Alert,
+  Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
 import { Link } from "expo-router";
 import { useState } from "react";
 import { router } from "expo-router";
 import { supabase } from "../lib/supabase";
+import { MotiView } from "moti";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -25,7 +26,7 @@ export default function Login() {
   async function handleSignIn() {
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email: email,
       password: password,
     });
@@ -39,6 +40,7 @@ export default function Login() {
     setLoading(false);
     router.replace("/(painel)/profile/page");
   }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -64,22 +66,41 @@ export default function Login() {
           <TextInput
             placeholder="Digite sua senha"
             style={styles.input}
-            secureTextEntry
+            secureTextEntry={!showPassword}
             value={password}
             onChangeText={setPassword}
           />
 
           <Ionicons
-            name="eye-off"
+            name={showPassword ? "eye" : "eye-off"}
             size={24}
             color={Colors.gold}
             style={{ position: "absolute", right: 16, top: 38 }}
             onPress={() => setShowPassword(!showPassword)}
           />
         </View>
-        <Pressable style={styles.button} onPress={handleSignIn}>
-          <Text style={styles.buttonText}>Entrar</Text>
+
+        {/* Botão animado apenas no clique */}
+        <Pressable onPress={handleSignIn} disabled={loading}>
+          {({ pressed }) => (
+            <MotiView
+              style={styles.button}
+              from={{ scale: 1, opacity: 1 }}
+              animate={{
+                scale: pressed ? 0.95 : 1,
+                opacity: pressed ? 0.8 : 1,
+              }}
+              transition={{ type: "timing", duration: 150 }}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color={Colors.acafrao} />
+              ) : (
+                <Text style={styles.buttonText}>Entrar</Text>
+              )}
+            </MotiView>
+          )}
         </Pressable>
+
         <Link href="/(auth)/signup/page" style={styles.link}>
           <Text>Ainda não possui conta? Cadastre-se</Text>
         </Link>
@@ -91,7 +112,7 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.black
+    backgroundColor: Colors.black,
   },
   header: {
     paddingTop: 20,
@@ -105,7 +126,7 @@ const styles = StyleSheet.create({
 
   form: {
     marginTop: 20,
-    height: 280,
+    height: 300,
     backgroundColor: Colors.acafrao,
     borderRadius: 16,
     paddingTop: 24,
@@ -134,6 +155,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     width: "100%",
+    marginTop: 12,
   },
 
   buttonText: {
@@ -147,5 +169,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     color: Colors.gray,
     textDecorationLine: "underline",
+    marginTop: 12,
   },
 });

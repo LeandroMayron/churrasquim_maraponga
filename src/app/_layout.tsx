@@ -16,12 +16,17 @@ export default function mainLayout() {
             options={{ headerShown: false }} />
 
             <Stack.Screen 
-            name="(auth)/salao/page"
+            name="(auth)/salao/page" 
             options={{ headerShown: false }} />
 
-            <Stack.Screen
-            name="(auth)/cardapio/page"
+            <Stack.Screen 
+            name="(auth)/cardapio/page" 
             options={{ headerShown: false }} />
+
+            <Stack.Screen 
+            name="(auth)/mesa/[id]" 
+            options={{ headerShown: false }} />
+
         </Stack>
 
         

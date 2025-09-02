@@ -14,6 +14,7 @@ import {
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../../../lib/supabase";
+import { MotiView } from "moti";
 
 const backgroundImage = require("./../../../../assets/images/logoSemFundo.png");
 
@@ -27,7 +28,7 @@ export default function Signup() {
   async function handleSignUp() {
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email: email,
       password: password,
       options: {
@@ -38,13 +39,13 @@ export default function Signup() {
     });
 
     if (error) {
-      Alert.alert("Error", error.message);
+      Alert.alert("Erro", error.message);
       setLoading(false);
       return;
     }
 
     setLoading(false);
-    router.replace('/')
+    router.replace("/");
   }
 
   return (
@@ -59,6 +60,7 @@ export default function Signup() {
               style={{ alignSelf: "center", marginTop: 8 }}
             />
           </Pressable>
+
           <View style={styles.form}>
             <Image
               source={backgroundImage}
@@ -85,6 +87,7 @@ export default function Signup() {
                 onChangeText={setEmail}
               />
             </View>
+
             <View>
               <Text style={styles.label}>Senha</Text>
               <TextInput
@@ -95,7 +98,7 @@ export default function Signup() {
                 onChangeText={setPassword}
               />
               <Ionicons
-                name="eye-off"
+                name={showPassword ? "eye" : "eye-off"}
                 size={24}
                 color={Colors.gold}
                 style={{ position: "absolute", right: 16, top: 38 }}
@@ -103,18 +106,28 @@ export default function Signup() {
               />
             </View>
 
-            <Pressable
-              style={[
-                styles.button,
-                (!name || !email || !password) && { opacity: 0.5 },
-              ]}
-              onPress={handleSignUp}
-              disabled={!name || !email || !password}
+            <MotiView
+              from={{ scale: 0.95, opacity: 0.7 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{
+                type: "timing",
+                duration: 600,
+              }}
+              style={{ width: "100%" }}
             >
-              <Text style={styles.buttonText}>
-                {loading ? "Carregando..." : "Cadastrar"}
-              </Text>
-            </Pressable>
+              <Pressable
+                style={[
+                  styles.button,
+                  (!name || !email || !password) && { opacity: 0.5 },
+                ]}
+                onPress={handleSignUp}
+                disabled={!name || !email || !password}
+              >
+                <Text style={styles.buttonText}>
+                  {loading ? "Carregando..." : "Cadastrar"}
+                </Text>
+              </Pressable>
+            </MotiView>
           </View>
         </View>
       </ScrollView>
@@ -190,3 +203,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+//# sourceMappingURL=page.js.map

@@ -1,78 +1,100 @@
-import { View, Text, StyleSheet } from "react-native";
 import Colors from "@/constants/Colors";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+
+const MENU_URL =
+  "https://6644-fontend.github.io/menu-churrasquinho-maraponga/menu.json";
 
 const Cardapio = () => {
-    return (
-      <View style={styles.container}>
-        <View style={styles.aside}>
-          <View>
-            <Text style={styles.titulo}>Bolinhas:</Text>
-            <Text style={styles.text}>Bolinha de Frango</Text>
-            <Text style={styles.preco}>R$ 16,99</Text>
-          </View>
-          <View>
-            <Text style={styles.titulo}>Pastelzinho:</Text>
-            <Text style={styles.text}>pastel de queijo</Text>
-            <Text style={styles.preco}>R$ 21,99</Text>
-          </View>
-          <View>
-            <Text style={styles.titulo}>Entradas:</Text>
-            <Text style={styles.text}>batata frita</Text>
-            <Text style={styles.preco}>R$ 15,90</Text>
-          </View>
-        </View>
+  const [menu, setMenu] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-        <View style={styles.aside}>
-          <View>
-            <Text style={styles.titulo}>Prato Principal:</Text>
-            <Text style={styles.text}>Frango com batata</Text>
-            <Text style={styles.preco}>R$ 29,99</Text>
-          </View>
-          <View>
-            <Text style={styles.titulo}>Sobremesa:</Text>
-            <Text style={styles.text}>Pudim de leite</Text>
-            <Text style={styles.preco}>R$ 12,50</Text>
-          </View>
-          <View>
-            <Text style={styles.titulo}>Bebidas:</Text>
-            <Text style={styles.text}>Refrigerante</Text>
-            <Text style={styles.preco}>R$ 5,00</Text>
-          </View>
+  useEffect(() => {
+    fetch(MENU_URL)
+      .then((response) => response.json())
+      .then((data) => {
+        // Transforma o objeto em array [{categoria, itens}]
+        const menuArray = Object.entries(data).map(([categoria, itens]) => ({
+          categoria,
+          itens,
+        }));
+        setMenu(menuArray);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setLoading(false);
+        Alert.alert("Erro ao carregar cardápio", err.message);
+      });
+  }, []);
+
+  if (loading) {
+    return <ActivityIndicator color={Colors.gold} style={{ flex: 1 }} />;
+  }
+
+  return (
+    <SafeAreaView>
+      <ScrollView>
+        <View style={styles.container}>
+          {menu.map((categoria, idx) => (
+            <View key={idx}>
+              <Text style={styles.titulo}>{categoria.categoria}</Text>
+              {categoria.itens.map((item, i) => (
+                <View style={styles.item} key={i}>
+                  <Text style={styles.text}>{item.name}</Text>
+                  <Text style={styles.preco}>R$ {item.price}</Text>
+                </View>
+              ))}
+            </View>
+          ))}
         </View>
-      </View>
-    );
-}
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.black,
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
-  aside: {
-    width: "40%",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    marginVertical: 40,
-    gap: 10,
+    paddingTop: 40,
+    paddingBottom: 30,
   },
 
   titulo: {
+    width: "100%",
     backgroundColor: Colors.gold,
     textTransform: "uppercase",
     color: Colors.black,
+    fontWeight: "bold",
+    paddingLeft: 5,
+    marginBottom: 5,
+  },
+  item: {
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
 
   text: {
     color: Colors.white,
     fontWeight: "bold",
     textTransform: "uppercase",
+    paddingLeft: 5,
+    marginBottom: 5,
   },
+
   preco: {
     color: Colors.gold,
     fontWeight: "bold",
     textTransform: "uppercase",
+    paddingRight: 5,
   },
 });
 

@@ -1,70 +1,102 @@
-import { View, StyleSheet} from "react-native";
 import Colors from "@/constants/Colors";
+import { AntDesign } from "@expo/vector-icons";
+import React, { useState } from "react";
+import {
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Dimensions,
+} from "react-native";
+import { MotiView } from "moti";
 
+const SCREEN_WIDTH = Dimensions.get("window").width;
+const NUM_COLUMNS = 4;
+const ITEM_MARGIN = 12;
+const ITEM_WIDTH =
+  (SCREEN_WIDTH - ITEM_MARGIN * (NUM_COLUMNS + 1)) / NUM_COLUMNS;
 
 const Salao = () => {
-    return (
-      <View style={style.container}>
+  const [mesas, setMesas] = useState(
+    Array.from({ length: 10 }, (_, i) => i + 1)
+  );
 
-        <View style={style.mesas}>
-            
-        </View>
+  const adicionarMesa = () => {
+    setMesas([...mesas, mesas.length + 1]);
+  };
 
-        <View style={style.mesas}>
-            
-        </View>
+  const handleMesaPress = (mesaNumber) => {
+    console.log(`Mesa ${mesaNumber} clicada`);
+  };
 
-        <View style={style.mesas}>
-            
-        </View>
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={mesas}
+        keyExtractor={(item) => item.toString()}
+        numColumns={NUM_COLUMNS}
+        contentContainerStyle={styles.mesasContainer}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            onPress={() => handleMesaPress(item)}
+            activeOpacity={0.8}
+          >
+            <MotiView
+              from={{ scale: 1 }}
+              animate={{ scale: 1 }}
+              whileTap={{ scale: 0.9 }}
+              transition={{ type: "timing", duration: 150 }}
+              style={[styles.mesa, { width: ITEM_WIDTH }]}
+            >
+              <Text style={styles.mesaText}>Mesa {item}</Text>
+            </MotiView>
+          </TouchableOpacity>
+        )}
+      />
 
-        <View style={style.mesas}>
-            
-        </View>
+      <TouchableOpacity style={styles.fab} onPress={adicionarMesa}>
+        <AntDesign name="plus" size={32} color={Colors.white} />
+      </TouchableOpacity>
+    </View>
+  );
+};
 
-        <View style={style.mesas}>
-            
-        </View>
-
-        <View style={style.mesas}>
-            
-        </View>
-
-        <View style={style.mesas}>
-            
-        </View>
-
-        <View style={style.mesas}>
-            
-        </View>
-
-        <View style={style.mesas}>
-            
-        </View>
-
-        <View style={style.mesas}>
-            
-        </View>
-
-      </View>
-    );
-}
-
-const style = StyleSheet.create({
-    container: {
-        backgroundColor: Colors.black,
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-around',
-        gap: 10,
-    },
-
-    mesas: {
-        width: 60,
-        height: 60,
-        marginTop: 10,
-        backgroundColor: Colors.red,
-      }
-})
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.black,
+    justifyContent: "center",
+  },
+  mesasContainer: {
+    padding: 12,
+    alignItems: "center",
+  },
+  mesa: {
+    backgroundColor: Colors.gold,
+    borderRadius: 8,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    margin: ITEM_MARGIN / 2,
+  },
+  mesaText: {
+    color: Colors.black,
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  fab: {
+    position: "absolute",
+    right: 24,
+    bottom: 32,
+    backgroundColor: Colors.acafrao,
+    borderRadius: 32,
+    width: 64,
+    height: 64,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 4,
+  },
+});
 
 export default Salao;
