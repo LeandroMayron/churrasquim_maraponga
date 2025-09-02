@@ -1,6 +1,6 @@
 import Colors from "@/constants/Colors";
 import { useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
+import { supabase } from "../../../lib/supabase";
 
 export default function Mesa() {
   const { id } = useLocalSearchParams();
@@ -18,6 +19,25 @@ export default function Mesa() {
   const [loading, setLoading] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
   const [pedidoEnviado, setPedidoEnviado] = useState([]);
+  const [mesaFechada, setMesaFechada] = useState(false);
+  const [formaPagamento, setFormaPagamento] = useState(null);
+
+  // 🔹 Carregar pedidos existentes do Supabase
+  useEffect(() => {
+    const carregarPedidos = async () => {
+      const { data, error } = await supabase
+        .from("pedidos")
+        .select("*")
+        .eq("mesa_id", id)
+        .eq("status", "aberto");
+
+      if (!error && data.length > 0) {
+        setPedidoEnviado(data[0].itens);
+        setMesaFechada(false);
+      }
+    };
+    carregarPedidos();
+  }, [id]);
 
   const abrirModal = async () => {
     setLoading(true);
@@ -59,31 +79,137 @@ export default function Mesa() {
     return found ? found.quantity : 0;
   };
 
-  const enviarPedido = () => {
-    setPedidoEnviado((prev) => [...prev, ...selectedItems]);
+  // 🔹 Enviar pedido para Supabase
+  const enviarPedido = async () => {
+    const novoPedido = [...pedidoEnviado];
+
+    selectedItems.forEach((novoItem) => {
+      const existente = novoPedido.find((p) => p.name === novoItem.name);
+      if (existente) {
+        existente.quantity += novoItem.quantity;
+      } else {
+        novoPedido.push({ ...novoItem });
+      }
+    });
+
+    setPedidoEnviado(novoPedido);
     setSelectedItems([]);
     setModalVisible(false);
+
+    // salva no Supabase
+    const { error } = await supabase.from("pedidos").upsert({
+      mesa_id: id,
+      itens: novoPedido,
+      status: "aberto",
+      total: calcularTotal(novoPedido),
+    });
+
+    if (error) console.error("Erro ao salvar pedido:", error);
+  };
+
+  const calcularTotal = (lista = pedidoEnviado) => {
+    return lista.reduce((total, item) => total + item.quantity * item.price, 0);
+  };
+
+  // 🔹 Fechar mesa
+  const fecharMesa = async () => {
+    if (!formaPagamento) {
+      alert("Selecione uma forma de pagamento!");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("pedidos")
+      .update({ status: "fechado", pagamento: formaPagamento })
+      .eq("mesa_id", id)
+      .eq("status", "aberto");
+
+    if (!error) {
+      setMesaFechada(true);
+      setPedidoEnviado([]);
+      alert("Mesa fechada com sucesso!");
+    } else {
+      console.error("Erro ao fechar mesa:", error);
+    }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Mesa {id}</Text>
 
-      <TouchableOpacity style={styles.button} onPress={abrirModal}>
-        <Text style={styles.buttonText}>Fazer Pedido</Text>
-      </TouchableOpacity>
+      {!mesaFechada && (
+        <TouchableOpacity style={styles.button} onPress={abrirModal}>
+          <Text style={styles.buttonText}>Fazer Pedido</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Lista de pedidos enviados */}
       <View style={styles.pedidoContainer}>
         <Text style={styles.pedidoTitulo}>Pedidos Feitos</Text>
         {pedidoEnviado.length === 0 ? (
-          <Text style={styles.emptyText}>Nenhum pedido ainda.</Text>
+          <Text style={styles.emptyText}>
+            {mesaFechada ? "Mesa já fechada." : "Nenhum pedido ainda."}
+          </Text>
         ) : (
-          pedidoEnviado.map((item, index) => (
-            <Text key={index} style={styles.pedidoItem}>
-              {item.quantity}x {item.name}
-            </Text>
-          ))
+          <>
+            {pedidoEnviado.map((item, index) => (
+              <Text key={index} style={styles.pedidoItem}>
+                {item.quantity}x {item.name} — R${" "}
+                {(item.quantity * item.price).toFixed(2)}
+              </Text>
+            ))}
+
+            <View style={styles.totalContainer}>
+              <Text style={styles.totalText}>Total a Pagar:</Text>
+              <Text style={styles.totalValue}>
+                R$ {calcularTotal().toFixed(2)}
+              </Text>
+            </View>
+
+            {/* 🔹 Escolher forma de pagamento */}
+            {!mesaFechada && (
+              <View style={{ marginTop: 20, alignItems: "center" }}>
+                <Text style={{ color: Colors.gold, marginBottom: 10 }}>
+                  Selecione a forma de pagamento:
+                </Text>
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={() => setFormaPagamento("dinheiro")}
+                  >
+                    <Text style={styles.closeButtonText}>Dinheiro</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={() => setFormaPagamento("cartão")}
+                  >
+                    <Text style={styles.closeButtonText}>Cartão</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={() => setFormaPagamento("pix")}
+                  >
+                    <Text style={styles.closeButtonText}>PIX</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* 🔹 Botão fechar mesa */}
+                <TouchableOpacity
+                  style={[
+                    styles.closeButton,
+                    { backgroundColor: Colors.gold, marginTop: 12 },
+                  ]}
+                  onPress={fecharMesa}
+                >
+                  <Text
+                    style={[styles.closeButtonText, { color: Colors.black }]}
+                  >
+                    Fechar Mesa
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </>
         )}
       </View>
 
@@ -163,6 +289,7 @@ export default function Mesa() {
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -207,6 +334,25 @@ const styles = StyleSheet.create({
   emptyText: {
     color: Colors.gray,
     fontStyle: "italic",
+  },
+  totalContainer: {
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderColor: Colors.gold,
+    width: "100%",
+    alignItems: "center",
+  },
+  totalText: {
+    color: Colors.gold,
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  totalValue: {
+    color: Colors.white,
+    fontSize: 20,
+    fontWeight: "bold",
+    marginTop: 4,
   },
   modalOverlay: {
     flex: 1,
@@ -255,6 +401,7 @@ const styles = StyleSheet.create({
   },
   itemPrice: {
     color: Colors.black,
+    fontWeight: "600",
   },
   quantityControl: {
     flexDirection: "row",
@@ -262,30 +409,31 @@ const styles = StyleSheet.create({
   },
   qtyButton: {
     backgroundColor: Colors.acafrao,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 4,
+    padding: 6,
+    borderRadius: 6,
+    marginHorizontal: 6,
   },
   qtyButtonText: {
     color: Colors.white,
     fontWeight: "bold",
-    fontSize: 16,
+    fontSize: 18,
   },
   quantityText: {
     color: Colors.black,
     fontWeight: "bold",
-    marginHorizontal: 10,
     fontSize: 16,
   },
   closeButton: {
     marginTop: 16,
     backgroundColor: Colors.acafrao,
     paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 8,
     alignItems: "center",
   },
   closeButtonText: {
     color: Colors.white,
     fontWeight: "bold",
+    fontSize: 16,
   },
 });
