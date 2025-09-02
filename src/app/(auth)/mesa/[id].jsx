@@ -189,13 +189,14 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "#000000aa",
+    backgroundColor: "#000000",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
   },
   modalContent: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.black,
+    marginTop: 10,
     borderRadius: 12,
     padding: 20,
     width: "100%",
@@ -237,6 +238,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     backgroundColor: Colors.acafrao,
+    marginTop: 10,
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: "center",
