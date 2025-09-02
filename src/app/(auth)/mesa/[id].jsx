@@ -18,6 +18,7 @@ export default function Mesa() {
   const [modalVisible, setModalVisible] = useState(false);
   const [menuData, setMenuData] = useState({});
   const [loading, setLoading] = useState(false);
+  const [selectedItems, setSelectedItems] = useState([]);
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -57,6 +58,21 @@ export default function Mesa() {
     setModalVisible(true);
   };
 
+  const toggleItemSelection = (item) => {
+    const isSelected = selectedItems.some((i) => i.name === item.name);
+    if (isSelected) {
+      setSelectedItems((prev) => prev.filter((i) => i.name !== item.name));
+    } else {
+      setSelectedItems((prev) => [...prev, item]);
+    }
+  };
+
+  const enviarPedido = () => {
+    console.log(`Pedido da mesa ${id}:`, selectedItems);
+    setModalVisible(false);
+    setSelectedItems([]);
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Mesa {id}</Text>
@@ -93,18 +109,44 @@ export default function Mesa() {
                   <View key={categoria} style={styles.categoriaContainer}>
                     <Text style={styles.categoriaTitulo}>{categoria}</Text>
                     {Array.isArray(itens) &&
-                      itens.map((item, index) => (
-                        <View key={index} style={styles.itemContainer}>
-                          <Text style={styles.itemText}>{item.name}</Text>
-                          <Text style={styles.itemPrice}>
-                            R$ {item.price.toFixed(2)}
-                          </Text>
-                        </View>
-                      ))}
+                      itens.map((item, index) => {
+                        const isSelected = selectedItems.some(
+                          (i) => i.name === item.name
+                        );
+                        return (
+                          <TouchableOpacity
+                            key={index}
+                            onPress={() => toggleItemSelection(item)}
+                            style={[
+                              styles.itemContainer,
+                              isSelected && {
+                                backgroundColor: Colors.acafrao,
+                              },
+                            ]}
+                          >
+                            <Text style={styles.itemText}>{item.name}</Text>
+                            <Text style={styles.itemPrice}>
+                              R$ {item.price.toFixed(2)}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
                   </View>
                 ))}
               </ScrollView>
             )}
+
+            <TouchableOpacity
+              onPress={enviarPedido}
+              style={[
+                styles.closeButton,
+                { marginBottom: 8, backgroundColor: Colors.gold },
+              ]}
+            >
+              <Text style={[styles.closeButtonText, { color: Colors.black }]}>
+                Enviar Pedido
+              </Text>
+            </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => setModalVisible(false)}
@@ -137,6 +179,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 8,
+    marginTop: 20,
     elevation: 3,
   },
   buttonText: {
@@ -152,7 +195,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    backgroundColor: Colors.black,
+    backgroundColor: Colors.white,
     borderRadius: 12,
     padding: 20,
     width: "100%",
@@ -193,7 +236,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   closeButton: {
-    marginTop: 16,
     backgroundColor: Colors.acafrao,
     paddingVertical: 10,
     borderRadius: 8,
