@@ -1,3 +1,4 @@
+// app/mesa/[id].tsx
 import Colors from "@/constants/Colors";
 import { useLocalSearchParams } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
