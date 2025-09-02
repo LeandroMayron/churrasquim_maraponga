@@ -16,7 +16,7 @@ const Header = () => {
         </View>
 
         <View style={styles.botao}>
-          <Link href="/" style={styles.link}>
+          <Link href="/(auth)/logout/page" style={styles.link}>
             Configuração
           </Link>
         </View>
