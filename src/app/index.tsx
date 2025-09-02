@@ -9,10 +9,11 @@ import {
   Alert,
   Pressable,
   ActivityIndicator,
+  BackHandler
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { router } from "expo-router";
 import { supabase } from "../lib/supabase";
 import { MotiView } from "moti";
@@ -23,6 +24,15 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // 🔒 Bloquear botão voltar no Android
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => true
+    );
+    return () => backHandler.remove();
+  }, []);
+
   async function handleSignIn() {
     setLoading(true);
 
@@ -31,13 +41,14 @@ export default function Login() {
       password: password,
     });
 
+    setLoading(false);
+
     if (error) {
       Alert.alert("Erro", error.message);
-      setLoading(false);
       return;
     }
 
-    setLoading(false);
+    // Redireciona sem permitir voltar
     router.replace("/(painel)/profile/page");
   }
 
@@ -80,7 +91,6 @@ export default function Login() {
           />
         </View>
 
-        {/* Botão animado apenas no clique */}
         <Pressable onPress={handleSignIn} disabled={loading}>
           {({ pressed }) => (
             <MotiView
