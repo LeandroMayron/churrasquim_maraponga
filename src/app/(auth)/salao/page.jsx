@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { MotiView } from "moti";
 import { useRouter } from "expo-router";
-import { supabase } from "../../../lib/supabase"; // ajuste o caminho se precisar
+import { supabase } from "../../../lib/supabase";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const NUM_COLUMNS = 4;
@@ -20,17 +20,17 @@ const ITEM_WIDTH =
   (SCREEN_WIDTH - ITEM_MARGIN * (NUM_COLUMNS + 1)) / NUM_COLUMNS;
 
 const Salao = () => {
-const [mesas, setMesas] = useState([]);
-
+  const [mesas, setMesas] = useState([]);
   const router = useRouter();
 
   // 🔹 Carregar mesas e pedidos do Supabase
   useEffect(() => {
     const carregarMesas = async () => {
-      const { data, error } = await supabase.from("pedidos").select("mesa_id, status");
+      const { data, error } = await supabase
+        .from("pedidos")
+        .select("mesa_id, status");
 
       if (!error && data) {
-        // cria lista de mesas (1 até 10) e define status conforme supabase
         const totalMesas = 10;
         const mesasAtualizadas = Array.from({ length: totalMesas }, (_, i) => {
           const mesaId = i + 1;
@@ -39,7 +39,7 @@ const [mesas, setMesas] = useState([]);
           );
           return {
             id: mesaId,
-            status: pedidoAberto ? "aberto" : "livre",
+            status: pedidoAberto ? "aberto" : "livre", // 🔹 Status atualizado
           };
         });
         setMesas(mesasAtualizadas);
@@ -65,7 +65,7 @@ const [mesas, setMesas] = useState([]);
     };
   }, []);
 
-  const handleMesaPress = (mesaId: number) => {
+  const handleMesaPress = (mesaId) => {
     router.push(`/mesa/${mesaId}`);
   };
 
@@ -77,21 +77,16 @@ const [mesas, setMesas] = useState([]);
         numColumns={NUM_COLUMNS}
         contentContainerStyle={styles.mesasContainer}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => handleMesaPress(item.id)}
-            activeOpacity={0.8}
-            accessibilityLabel={`Mesa ${item.id}`}
-            accessible
-          >
+          <TouchableOpacity onPress={() => handleMesaPress(item.id)}>
             <MotiView
               from={{ scale: 1 }}
               animate={{ scale: 1 }}
-              whileTap={{ scale: 0.9 }}
+              whileTap={{ scale: 0.95 }}
               transition={{ type: "timing", duration: 150 }}
               style={[
                 styles.mesa,
                 { width: ITEM_WIDTH },
-                item.status === "aberto" && { backgroundColor: "green" }, // mesa verde
+                item.status === "aberto" && { backgroundColor: Colors.green }, // mesa ocupada
               ]}
             >
               <Text
@@ -121,7 +116,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   mesa: {
-    backgroundColor: Colors.gold,
+    backgroundColor: Colors.gold, // mesa livre
     borderRadius: 8,
     paddingVertical: 16,
     alignItems: "center",
