@@ -1,8 +1,6 @@
-// app/salao.tsx (ou onde estiver seu componente Salao)
-
 import Colors from "@/constants/Colors";
 import { AntDesign } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FlatList,
   StyleSheet,
@@ -13,6 +11,7 @@ import {
 } from "react-native";
 import { MotiView } from "moti";
 import { useRouter } from "expo-router";
+import { supabase } from "../../../lib/supabase"; // ajuste o caminho se precisar
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const NUM_COLUMNS = 4;
@@ -21,15 +20,50 @@ const ITEM_WIDTH =
   (SCREEN_WIDTH - ITEM_MARGIN * (NUM_COLUMNS + 1)) / NUM_COLUMNS;
 
 const Salao = () => {
-  const [mesas, setMesas] = useState(
-    Array.from({ length: 10 }, (_, i) => ({ id: i + 1 }))
-  );
+const [mesas, setMesas] = useState([]);
 
   const router = useRouter();
 
-  const adicionarMesa = () => {
-    setMesas((prev) => [...prev, { id: prev.length + 1 }]);
-  };
+  // 🔹 Carregar mesas e pedidos do Supabase
+  useEffect(() => {
+    const carregarMesas = async () => {
+      const { data, error } = await supabase.from("pedidos").select("mesa_id, status");
+
+      if (!error && data) {
+        // cria lista de mesas (1 até 10) e define status conforme supabase
+        const totalMesas = 10;
+        const mesasAtualizadas = Array.from({ length: totalMesas }, (_, i) => {
+          const mesaId = i + 1;
+          const pedidoAberto = data.find(
+            (p) => p.mesa_id === mesaId && p.status === "aberto"
+          );
+          return {
+            id: mesaId,
+            status: pedidoAberto ? "aberto" : "livre",
+          };
+        });
+        setMesas(mesasAtualizadas);
+      }
+    };
+
+    carregarMesas();
+
+    // 🔹 Atualiza em tempo real
+    const channel = supabase
+      .channel("pedidos-change")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "pedidos" },
+        () => {
+          carregarMesas();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const handleMesaPress = (mesaId: number) => {
     router.push(`/mesa/${mesaId}`);
@@ -54,17 +88,24 @@ const Salao = () => {
               animate={{ scale: 1 }}
               whileTap={{ scale: 0.9 }}
               transition={{ type: "timing", duration: 150 }}
-              style={[styles.mesa, { width: ITEM_WIDTH }]}
+              style={[
+                styles.mesa,
+                { width: ITEM_WIDTH },
+                item.status === "aberto" && { backgroundColor: "green" }, // mesa verde
+              ]}
             >
-              <Text style={styles.mesaText}>Mesa {item.id}</Text>
+              <Text
+                style={[
+                  styles.mesaText,
+                  item.status === "aberto" && { color: Colors.white },
+                ]}
+              >
+                Mesa {item.id}
+              </Text>
             </MotiView>
           </TouchableOpacity>
         )}
       />
-
-      <TouchableOpacity style={styles.fab} onPress={adicionarMesa}>
-        <AntDesign name="plus" size={32} color={Colors.white} />
-      </TouchableOpacity>
     </View>
   );
 };
@@ -91,18 +132,6 @@ const styles = StyleSheet.create({
     color: Colors.black,
     fontWeight: "bold",
     fontSize: 16,
-  },
-  fab: {
-    position: "absolute",
-    right: 24,
-    bottom: 32,
-    backgroundColor: Colors.acafrao,
-    borderRadius: 32,
-    width: 64,
-    height: 64,
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 4,
   },
 });
 
