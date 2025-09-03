@@ -49,7 +49,9 @@ const Cardapio = () => {
               {categoria.itens.map((item, i) => (
                 <View style={styles.item} key={i}>
                   <Text style={styles.text}>{item.name}</Text>
-                  <Text style={styles.preco}>R$ {item.price}</Text>
+                  <Text style={styles.preco}>
+                    R$ {item.price.toFixed(2).replace(".", ",")}
+                  </Text>
                 </View>
               ))}
             </View>
