@@ -27,6 +27,10 @@ export default function mainLayout() {
             name="(auth)/mesa/[id]" 
             options={{ headerShown: false }} />
 
+            <Stack.Screen 
+            name="(auth)/logout/page" 
+            options={{ headerShown: false }} />
+
         </Stack>
 
         

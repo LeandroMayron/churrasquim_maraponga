@@ -1,3 +1,5 @@
+// app/salao.tsx (ou onde estiver seu componente Salao)
+
 import Colors from "@/constants/Colors";
 import { AntDesign } from "@expo/vector-icons";
 import React, { useState } from "react";
@@ -10,6 +12,7 @@ import {
   Dimensions,
 } from "react-native";
 import { MotiView } from "moti";
+import { useRouter } from "expo-router";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const NUM_COLUMNS = 4;
@@ -19,28 +22,32 @@ const ITEM_WIDTH =
 
 const Salao = () => {
   const [mesas, setMesas] = useState(
-    Array.from({ length: 10 }, (_, i) => i + 1)
+    Array.from({ length: 10 }, (_, i) => ({ id: i + 1 }))
   );
 
+  const router = useRouter();
+
   const adicionarMesa = () => {
-    setMesas([...mesas, mesas.length + 1]);
+    setMesas((prev) => [...prev, { id: prev.length + 1 }]);
   };
 
-  const handleMesaPress = (mesaNumber) => {
-    console.log(`Mesa ${mesaNumber} clicada`);
+  const handleMesaPress = (mesaId: number) => {
+    router.push(`/mesa/${mesaId}`);
   };
 
   return (
     <View style={styles.container}>
       <FlatList
         data={mesas}
-        keyExtractor={(item) => item.toString()}
+        keyExtractor={(item) => item.id.toString()}
         numColumns={NUM_COLUMNS}
         contentContainerStyle={styles.mesasContainer}
         renderItem={({ item }) => (
           <TouchableOpacity
-            onPress={() => handleMesaPress(item)}
+            onPress={() => handleMesaPress(item.id)}
             activeOpacity={0.8}
+            accessibilityLabel={`Mesa ${item.id}`}
+            accessible
           >
             <MotiView
               from={{ scale: 1 }}
@@ -49,7 +56,7 @@ const Salao = () => {
               transition={{ type: "timing", duration: 150 }}
               style={[styles.mesa, { width: ITEM_WIDTH }]}
             >
-              <Text style={styles.mesaText}>Mesa {item}</Text>
+              <Text style={styles.mesaText}>Mesa {item.id}</Text>
             </MotiView>
           </TouchableOpacity>
         )}
@@ -66,10 +73,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.black,
-    justifyContent: "center",
   },
   mesasContainer: {
     padding: 12,
+    paddingBottom: 120,
     alignItems: "center",
   },
   mesa: {
