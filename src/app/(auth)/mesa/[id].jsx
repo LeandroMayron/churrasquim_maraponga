@@ -22,7 +22,7 @@ export default function Mesa() {
   const [mesaFechada, setMesaFechada] = useState(false);
   const [formaPagamento, setFormaPagamento] = useState(null);
 
-  // 🔹 Carregar pedidos existentes do Supabase
+  // 🔹 Carregar pedidos + realtime
   useEffect(() => {
     const carregarPedidos = async () => {
       const { data, error } = await supabase
@@ -34,11 +34,46 @@ export default function Mesa() {
       if (!error && data.length > 0) {
         setPedidoEnviado(data[0].itens);
         setMesaFechada(false);
+      } else {
+        setPedidoEnviado([]);
       }
     };
+
     carregarPedidos();
+
+    // 🔹 Listener realtime
+    const channel = supabase
+      .channel("pedidos-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "pedidos",
+          filter: `mesa_id=eq.${id}`,
+        },
+        (payload) => {
+          console.log("📡 Realtime payload:", payload);
+
+          if (payload.new?.status === "aberto") {
+            setPedidoEnviado(payload.new.itens || []);
+            setMesaFechada(false);
+          }
+
+          if (payload.new?.status === "fechado") {
+            setMesaFechada(true);
+            setPedidoEnviado([]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [id]);
 
+  // 🔹 Abrir modal e carregar menu
   const abrirModal = async () => {
     setLoading(true);
     setModalVisible(true);
@@ -55,6 +90,7 @@ export default function Mesa() {
     }
   };
 
+  // 🔹 Alterar quantidade de itens selecionados
   const toggleItemQuantity = (item, delta) => {
     setSelectedItems((prev) => {
       const exists = prev.find((i) => i.name === item.name);
@@ -74,9 +110,15 @@ export default function Mesa() {
     });
   };
 
+  // 🔹 Pegar quantidade de um item
   const getItemQuantity = (item) => {
     const found = selectedItems.find((i) => i.name === item.name);
     return found ? found.quantity : 0;
+  };
+
+  // 🔹 Calcular total do pedido
+  const calcularTotal = (lista = pedidoEnviado) => {
+    return lista.reduce((total, item) => total + item.quantity * item.price, 0);
   };
 
   // 🔹 Enviar pedido para Supabase
@@ -92,11 +134,15 @@ export default function Mesa() {
       }
     });
 
+    if (novoPedido.length === 0) {
+      alert("Selecione pelo menos um item para enviar!");
+      return;
+    }
+
     setPedidoEnviado(novoPedido);
     setSelectedItems([]);
     setModalVisible(false);
 
-    // salva no Supabase
     const { error } = await supabase.from("pedidos").upsert({
       mesa_id: id,
       itens: novoPedido,
@@ -104,11 +150,12 @@ export default function Mesa() {
       total: calcularTotal(novoPedido),
     });
 
-    if (error) console.error("Erro ao salvar pedido:", error);
-  };
-
-  const calcularTotal = (lista = pedidoEnviado) => {
-    return lista.reduce((total, item) => total + item.quantity * item.price, 0);
+    if (!error) {
+      setMesaFechada(false);
+    } else {
+      console.error("Erro ao salvar pedido:", error);
+      alert("Erro ao enviar o pedido. Tente novamente.");
+    }
   };
 
   // 🔹 Fechar mesa
@@ -118,18 +165,28 @@ export default function Mesa() {
       return;
     }
 
-    const { error } = await supabase
-      .from("pedidos")
-      .update({ status: "fechado", pagamento: formaPagamento })
-      .eq("mesa_id", id)
-      .eq("status", "aberto");
+    try {
+      const { error } = await supabase
+        .from("pedidos")
+        .update({
+          status: "fechado",
+          pagamento: formaPagamento,
+          itens: [],
+        })
+        .eq("mesa_id", id)
+        .eq("status", "aberto");
 
-    if (!error) {
-      setMesaFechada(true);
-      setPedidoEnviado([]);
-      alert("Mesa fechada com sucesso!");
-    } else {
-      console.error("Erro ao fechar mesa:", error);
+      if (!error) {
+        setMesaFechada(true);
+        setPedidoEnviado([]);
+        alert("Mesa fechada com sucesso!");
+      } else {
+        console.error("Erro ao fechar mesa:", error);
+        alert("Erro ao fechar a mesa. Tente novamente.");
+      }
+    } catch (err) {
+      console.error("Erro inesperado ao fechar a mesa:", err);
+      alert("Erro inesperado. Tente novamente.");
     }
   };
 
@@ -166,7 +223,6 @@ export default function Mesa() {
               </Text>
             </View>
 
-            {/* 🔹 Escolher forma de pagamento */}
             {!mesaFechada && (
               <View style={{ marginTop: 20, alignItems: "center" }}>
                 <Text style={{ color: Colors.gold, marginBottom: 10 }}>
@@ -193,7 +249,6 @@ export default function Mesa() {
                   </TouchableOpacity>
                 </View>
 
-                {/* 🔹 Botão fechar mesa */}
                 <TouchableOpacity
                   style={[
                     styles.closeButton,
@@ -289,7 +344,7 @@ export default function Mesa() {
   );
 }
 
-
+// 🔹 Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -310,31 +365,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     elevation: 3,
   },
-  buttonText: {
-    color: Colors.white,
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  pedidoContainer: {
-    marginTop: 30,
-    width: "90%",
-    alignItems: "center",
-  },
+  buttonText: { color: Colors.white, fontWeight: "bold", fontSize: 16 },
+  pedidoContainer: { marginTop: 30, width: "90%", alignItems: "center" },
   pedidoTitulo: {
     color: Colors.gold,
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 10,
   },
-  pedidoItem: {
-    color: Colors.white,
-    fontSize: 16,
-    marginVertical: 2,
-  },
-  emptyText: {
-    color: Colors.gray,
-    fontStyle: "italic",
-  },
+  pedidoItem: { color: Colors.white, fontSize: 16, marginVertical: 2 },
+  emptyText: { color: Colors.gray, fontStyle: "italic" },
   totalContainer: {
     marginTop: 12,
     paddingTop: 10,
@@ -343,11 +383,7 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
   },
-  totalText: {
-    color: Colors.gold,
-    fontSize: 18,
-    fontWeight: "bold",
-  },
+  totalText: { color: Colors.gold, fontSize: 18, fontWeight: "bold" },
   totalValue: {
     color: Colors.white,
     fontSize: 20,
@@ -375,9 +411,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textAlign: "center",
   },
-  categoriaContainer: {
-    marginBottom: 16,
-  },
+  categoriaContainer: { marginBottom: 16 },
   categoriaTitulo: {
     color: Colors.acafrao,
     fontSize: 18,
@@ -394,35 +428,17 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  itemText: {
-    color: Colors.black,
-    fontWeight: "bold",
-    fontSize: 15,
-  },
-  itemPrice: {
-    color: Colors.black,
-    fontWeight: "600",
-  },
-  quantityControl: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
+  itemText: { color: Colors.black, fontWeight: "bold", fontSize: 15 },
+  itemPrice: { color: Colors.black, fontWeight: "600" },
+  quantityControl: { flexDirection: "row", alignItems: "center" },
   qtyButton: {
     backgroundColor: Colors.acafrao,
     padding: 6,
     borderRadius: 6,
     marginHorizontal: 6,
   },
-  qtyButtonText: {
-    color: Colors.white,
-    fontWeight: "bold",
-    fontSize: 18,
-  },
-  quantityText: {
-    color: Colors.black,
-    fontWeight: "bold",
-    fontSize: 16,
-  },
+  qtyButtonText: { color: Colors.white, fontWeight: "bold", fontSize: 18 },
+  quantityText: { color: Colors.black, fontWeight: "bold", fontSize: 16 },
   closeButton: {
     marginTop: 16,
     backgroundColor: Colors.acafrao,
@@ -431,9 +447,5 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
   },
-  closeButtonText: {
-    color: Colors.white,
-    fontWeight: "bold",
-    fontSize: 16,
-  },
+  closeButtonText: { color: Colors.white, fontWeight: "bold", fontSize: 16 },
 });
