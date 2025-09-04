@@ -22,7 +22,7 @@ export default function Mesa() {
   const [mesaFechada, setMesaFechada] = useState(false);
   const [formaPagamento, setFormaPagamento] = useState(null);
 
-  // 🔹 Carregar pedidos existentes do Supabase
+  // 🔹 Carregar pedidos + realtime
   useEffect(() => {
     const carregarPedidos = async () => {
       const { data, error } = await supabase
@@ -34,9 +34,43 @@ export default function Mesa() {
       if (!error && data.length > 0) {
         setPedidoEnviado(data[0].itens);
         setMesaFechada(false);
+      } else {
+        setPedidoEnviado([]);
       }
     };
+
     carregarPedidos();
+
+    // 🔹 Listener realtime
+    const channel = supabase
+      .channel("pedidos-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "pedidos",
+          filter: `mesa_id=eq.${id}`,
+        },
+        (payload) => {
+          console.log("📡 Realtime payload:", payload);
+
+          if (payload.new?.status === "aberto") {
+            setPedidoEnviado(payload.new.itens || []);
+            setMesaFechada(false);
+          }
+
+          if (payload.new?.status === "fechado") {
+            setMesaFechada(true);
+            setPedidoEnviado([]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [id]);
 
   // 🔹 Abrir modal e carregar menu
