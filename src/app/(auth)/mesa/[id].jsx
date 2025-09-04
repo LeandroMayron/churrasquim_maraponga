@@ -22,7 +22,7 @@ export default function Mesa() {
   const [mesaFechada, setMesaFechada] = useState(false);
   const [formaPagamento, setFormaPagamento] = useState(null);
 
-  // 🔹 Carregar pedidos existentes do Supabase
+  // 🔹 Carregar pedidos + realtime
   useEffect(() => {
     const carregarPedidos = async () => {
       const { data, error } = await supabase
@@ -34,9 +34,43 @@ export default function Mesa() {
       if (!error && data.length > 0) {
         setPedidoEnviado(data[0].itens);
         setMesaFechada(false);
+      } else {
+        setPedidoEnviado([]);
       }
     };
+
     carregarPedidos();
+
+    // 🔹 Listener realtime
+    const channel = supabase
+      .channel("pedidos-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "pedidos",
+          filter: `mesa_id=eq.${id}`,
+        },
+        (payload) => {
+          console.log("📡 Realtime payload:", payload);
+
+          if (payload.new?.status === "aberto") {
+            setPedidoEnviado(payload.new.itens || []);
+            setMesaFechada(false);
+          }
+
+          if (payload.new?.status === "fechado") {
+            setMesaFechada(true);
+            setPedidoEnviado([]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [id]);
 
   const abrirModal = async () => {
@@ -96,7 +130,6 @@ export default function Mesa() {
     setSelectedItems([]);
     setModalVisible(false);
 
-    // salva no Supabase
     const { error } = await supabase.from("pedidos").upsert({
       mesa_id: id,
       itens: novoPedido,
@@ -166,7 +199,6 @@ export default function Mesa() {
               </Text>
             </View>
 
-            {/* 🔹 Escolher forma de pagamento */}
             {!mesaFechada && (
               <View style={{ marginTop: 20, alignItems: "center" }}>
                 <Text style={{ color: Colors.gold, marginBottom: 10 }}>
@@ -193,7 +225,6 @@ export default function Mesa() {
                   </TouchableOpacity>
                 </View>
 
-                {/* 🔹 Botão fechar mesa */}
                 <TouchableOpacity
                   style={[
                     styles.closeButton,

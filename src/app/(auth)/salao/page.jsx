@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     color: Colors.black,
     fontWeight: "bold",
     fontSize: 16,
-  },
+},
 });
 
 export default Salao;
