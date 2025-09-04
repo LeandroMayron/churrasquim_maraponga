@@ -20,52 +20,70 @@ const ITEM_WIDTH =
   (SCREEN_WIDTH - ITEM_MARGIN * (NUM_COLUMNS + 1)) / NUM_COLUMNS;
 
 const Salao = () => {
-const [mesas, setMesas] = useState([]);
-
+  const [mesas, setMesas] = useState([]);
   const router = useRouter();
 
   // 🔹 Carregar mesas e pedidos do Supabase
   useEffect(() => {
-    const carregarMesas = async () => {
-      const { data, error } = await supabase.from("pedidos").select("mesa_id, status");
+    let isMounted = true;
 
-      if (!error && data) {
-        // cria lista de mesas (1 até 10) e define status conforme supabase
-        const totalMesas = 10;
-        const mesasAtualizadas = Array.from({ length: totalMesas }, (_, i) => {
-          const mesaId = i + 1;
-          const pedidoAberto = data.find(
-            (p) => p.mesa_id === mesaId && p.status === "aberto"
-          );
-          return {
-            id: mesaId,
-            status: pedidoAberto ? "aberto" : "livre",
-          };
-        });
-        setMesas(mesasAtualizadas);
+    const carregarMesas = async () => {
+      const { data, error } = await supabase
+        .from("pedidos")
+        .select("mesa_id, status");
+
+      if (error) {
+        console.error("Erro ao carregar mesas:", error);
+        return;
       }
+
+      const totalMesas = 10; // ajuste se tiver mais mesas
+      const mesasAtualizadas = Array.from({ length: totalMesas }, (_, i) => {
+        const mesaId = i + 1;
+        const pedidoAberto = (data || []).some(
+          (p) => p.mesa_id === mesaId && p.status === "aberto"
+        );
+        return {
+          id: mesaId,
+          status: pedidoAberto ? "aberto" : "livre",
+        };
+      });
+
+      if (isMounted) setMesas(mesasAtualizadas);
     };
 
+    // carga inicial
     carregarMesas();
 
-    // 🔹 Atualiza em tempo real
+    // 🔹 Realtime (INSERT/UPDATE/DELETE) -> recarrega lista
     const channel = supabase
       .channel("pedidos-change")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "pedidos" },
-        () => {
-          carregarMesas();
-        }
+        { event: "INSERT", schema: "public", table: "pedidos" },
+        carregarMesas
       )
-      .subscribe();
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "pedidos" },
+        carregarMesas
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "pedidos" },
+        carregarMesas
+      )
+      .subscribe((status) => {
+        console.log("📡 Realtime status:", status);
+      });
 
     return () => {
+      isMounted = false;
       supabase.removeChannel(channel);
     };
   }, []);
 
-  const handleMesaPress = (mesaId: number) => {
+  const handleMesaPress = (mesaId) => {
     router.push(`/mesa/${mesaId}`);
   };
 
@@ -91,7 +109,9 @@ const [mesas, setMesas] = useState([]);
               style={[
                 styles.mesa,
                 { width: ITEM_WIDTH },
-                item.status === "aberto" && { backgroundColor: "green" }, // mesa verde
+                item.status === "aberto"
+                  ? { backgroundColor: "green" } // 🟢 mesa com pedido
+                  : { backgroundColor: Colors.gold }, // 🟡 mesa livre
               ]}
             >
               <Text
@@ -121,7 +141,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   mesa: {
-    backgroundColor: Colors.gold,
     borderRadius: 8,
     paddingVertical: 16,
     alignItems: "center",
@@ -132,7 +151,7 @@ const styles = StyleSheet.create({
     color: Colors.black,
     fontWeight: "bold",
     fontSize: 16,
-},
+  },
 });
 
 export default Salao;
