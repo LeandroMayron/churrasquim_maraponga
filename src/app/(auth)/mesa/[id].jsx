@@ -174,19 +174,37 @@ export default function Mesa() {
                 </Text>
                 <View style={{ flexDirection: "row", gap: 10 }}>
                   <TouchableOpacity
-                    style={styles.closeButton}
+                    style={[
+                      styles.closeButton,
+                      {
+                        backgroundColor:
+                          formaPagamento === "dinheiro" ? "#f1af09" : "#ebd182",
+                      },
+                    ]}
                     onPress={() => setFormaPagamento("dinheiro")}
                   >
                     <Text style={styles.closeButtonText}>Dinheiro</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.closeButton}
+                    style={[
+                      styles.closeButton,
+                      {
+                        backgroundColor:
+                          formaPagamento === "cartão" ? "#f1af09" : "#ebd182",
+                      },
+                    ]}
                     onPress={() => setFormaPagamento("cartão")}
                   >
                     <Text style={styles.closeButtonText}>Cartão</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.closeButton}
+                    style={[
+                      styles.closeButton,
+                      {
+                        backgroundColor:
+                          formaPagamento === "pix" ? "#f1af09" : "#ebd182",
+                      },
+                    ]}
                     onPress={() => setFormaPagamento("pix")}
                   >
                     <Text style={styles.closeButtonText}>PIX</Text>
