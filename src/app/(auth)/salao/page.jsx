@@ -65,7 +65,7 @@ const [mesas, setMesas] = useState([]);
     };
   }, []);
 
-  const handleMesaPress = (mesaId: number) => {
+  const handleMesaPress = (mesaId) => {
     router.push(`/mesa/${mesaId}`);
   };
 
