@@ -20,18 +20,18 @@ const ITEM_WIDTH =
   (SCREEN_WIDTH - ITEM_MARGIN * (NUM_COLUMNS + 1)) / NUM_COLUMNS;
 
 const Salao = () => {
-const [mesas, setMesas] = useState([]);
-
+  const [mesas, setMesas] = useState([]);
   const router = useRouter();
 
-  // 🔹 Carregar mesas e pedidos do Supabase
   useEffect(() => {
     const carregarMesas = async () => {
-      const { data, error } = await supabase.from("pedidos").select("mesa_id, status");
+      const { data, error } = await supabase
+        .from("pedidos")
+        .select("mesa_id, status");
 
       if (!error && data) {
-        // cria lista de mesas (1 até 10) e define status conforme supabase
-        const totalMesas = 10;
+        // 🔹 Agora totalMesas = 20
+        const totalMesas = 20;
         const mesasAtualizadas = Array.from({ length: totalMesas }, (_, i) => {
           const mesaId = i + 1;
           const pedidoAberto = data.find(
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     color: Colors.black,
     fontWeight: "bold",
     fontSize: 16,
-},
+  },
 });
 
 export default Salao;
