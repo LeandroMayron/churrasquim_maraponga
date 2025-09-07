@@ -187,35 +187,50 @@ const enviarPedido = async () => {
 
 
   // 🔹 Fechar mesa
-  const fecharMesa = async () => {
-    if (!formaPagamento) {
-      alert("Selecione uma forma de pagamento!");
+const fecharMesa = async () => {
+  if (!formaPagamento) {
+    alert("Selecione uma forma de pagamento!");
+    return;
+  }
+
+  try {
+    // 🔍 Buscar o pedido aberto
+    const { data: pedidoAberto, error: fetchError } = await supabase
+      .from("pedidos")
+      .select("id")
+      .eq("mesa_id", id)
+      .eq("status", "aberto")
+      .limit(1)
+      .maybeSingle();
+
+    if (fetchError || !pedidoAberto) {
+      alert("Nenhum pedido aberto encontrado para esta mesa.");
       return;
     }
 
-    try {
-      const { error } = await supabase
-        .from("pedidos")
-        .update({
-          status: "fechado",
-          pagamento: formaPagamento,
-        })
-        .eq("mesa_id", id)
-        .eq("status", "aberto");
+    // 🔁 Atualizar pedido existente (fechando)
+    const { error } = await supabase
+      .from("pedidos")
+      .update({
+        status: "fechado",
+        pagamento: formaPagamento,
+      })
+      .eq("id", pedidoAberto.id); // usa o ID diretamente
 
-      if (!error) {
-        setMesaFechada(true);
-        setPedidoEnviado([]);
-        alert("Mesa fechada com sucesso!");
-      } else {
-        console.error("Erro ao fechar mesa:", error);
-        alert("Erro ao fechar a mesa. Tente novamente.");
-      }
-    } catch (err) {
-      console.error("Erro inesperado ao fechar a mesa:", err);
-      alert("Erro inesperado. Tente novamente.");
+    if (!error) {
+      setMesaFechada(true);
+      setPedidoEnviado([]);
+      alert("Mesa fechada com sucesso!");
+    } else {
+      console.error("Erro ao fechar mesa:", error);
+      alert("Erro ao fechar a mesa. Tente novamente.");
     }
-  };
+  } catch (err) {
+    console.error("Erro inesperado ao fechar a mesa:", err);
+    alert("Erro inesperado. Tente novamente.");
+  }
+};
+
 
   return (
     <View style={styles.container}>
