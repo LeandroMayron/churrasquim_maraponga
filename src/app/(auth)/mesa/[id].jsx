@@ -122,41 +122,69 @@ export default function Mesa() {
   };
 
   // 🔹 Enviar pedido para Supabase
-  const enviarPedido = async () => {
-    const novoPedido = [...pedidoEnviado];
+// 🔹 Enviar pedido para Supabase (corrigido)
+const enviarPedido = async () => {
+  const novoPedido = [...pedidoEnviado];
 
-    selectedItems.forEach((novoItem) => {
-      const existente = novoPedido.find((p) => p.name === novoItem.name);
-      if (existente) {
-        existente.quantity += novoItem.quantity;
-      } else {
-        novoPedido.push({ ...novoItem });
-      }
-    });
-
-    if (novoPedido.length === 0) {
-      alert("Selecione pelo menos um item para enviar!");
-      return;
+  // Adiciona ou atualiza os itens selecionados
+  selectedItems.forEach((novoItem) => {
+    const existente = novoPedido.find((p) => p.name === novoItem.name);
+    if (existente) {
+      existente.quantity += novoItem.quantity;
+    } else {
+      novoPedido.push({ ...novoItem });
     }
+  });
 
-    setPedidoEnviado(novoPedido);
-    setSelectedItems([]);
-    setModalVisible(false);
+  if (novoPedido.length === 0) {
+    alert("Selecione pelo menos um item para enviar!");
+    return;
+  }
 
-    const { error } = await supabase.from("pedidos").upsert({
+  setPedidoEnviado(novoPedido);
+  setSelectedItems([]);
+  setModalVisible(false);
+
+  try {
+    // 🔍 Verifica se já existe um pedido ABERTO para essa mesa
+    const { data: pedidosExistentes, error: fetchError } = await supabase
+      .from("pedidos")
+      .select("id")
+      .eq("mesa_id", id)
+      .eq("status", "aberto")
+      .limit(1)
+      .maybeSingle();
+
+    // Cria objeto do pedido para enviar
+    const pedidoParaEnviar = {
       mesa_id: id,
       itens: novoPedido,
       status: "aberto",
       total: calcularTotal(novoPedido),
-    });
+    };
 
-    if (!error) {
+    // Se já existe um pedido aberto, adiciona o ID para atualizar
+    if (pedidosExistentes) {
+      pedidoParaEnviar.id = pedidosExistentes.id;
+    }
+
+    // Envia o pedido (upsert com id se existir)
+    const { error: upsertError } = await supabase
+      .from("pedidos")
+      .upsert(pedidoParaEnviar);
+
+    if (!upsertError) {
       setMesaFechada(false);
     } else {
-      console.error("Erro ao salvar pedido:", error);
+      console.error("Erro ao salvar pedido:", upsertError);
       alert("Erro ao enviar o pedido. Tente novamente.");
     }
-  };
+  } catch (err) {
+    console.error("Erro inesperado ao enviar pedido:", err);
+    alert("Erro inesperado. Tente novamente.");
+  }
+};
+
 
   // 🔹 Fechar mesa
   const fecharMesa = async () => {
@@ -171,7 +199,6 @@ export default function Mesa() {
         .update({
           status: "fechado",
           pagamento: formaPagamento,
-          itens: [],
         })
         .eq("mesa_id", id)
         .eq("status", "aberto");
