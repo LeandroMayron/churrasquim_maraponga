@@ -9,7 +9,10 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Pressable
 } from "react-native";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../../../lib/supabase";
 
 export default function Mesa() {
@@ -122,115 +125,113 @@ export default function Mesa() {
   };
 
   // 🔹 Enviar pedido para Supabase
-// 🔹 Enviar pedido para Supabase (corrigido)
-const enviarPedido = async () => {
-  const novoPedido = [...pedidoEnviado];
+  // 🔹 Enviar pedido para Supabase (corrigido)
+  const enviarPedido = async () => {
+    const novoPedido = [...pedidoEnviado];
 
-  // Adiciona ou atualiza os itens selecionados
-  selectedItems.forEach((novoItem) => {
-    const existente = novoPedido.find((p) => p.name === novoItem.name);
-    if (existente) {
-      existente.quantity += novoItem.quantity;
-    } else {
-      novoPedido.push({ ...novoItem });
-    }
-  });
+    // Adiciona ou atualiza os itens selecionados
+    selectedItems.forEach((novoItem) => {
+      const existente = novoPedido.find((p) => p.name === novoItem.name);
+      if (existente) {
+        existente.quantity += novoItem.quantity;
+      } else {
+        novoPedido.push({ ...novoItem });
+      }
+    });
 
-  if (novoPedido.length === 0) {
-    alert("Selecione pelo menos um item para enviar!");
-    return;
-  }
-
-  setPedidoEnviado(novoPedido);
-  setSelectedItems([]);
-  setModalVisible(false);
-
-  try {
-    // 🔍 Verifica se já existe um pedido ABERTO para essa mesa
-    const { data: pedidosExistentes, error: fetchError } = await supabase
-      .from("pedidos")
-      .select("id")
-      .eq("mesa_id", id)
-      .eq("status", "aberto")
-      .limit(1)
-      .maybeSingle();
-
-    // Cria objeto do pedido para enviar
-    const pedidoParaEnviar = {
-      mesa_id: id,
-      itens: novoPedido,
-      status: "aberto",
-      total: calcularTotal(novoPedido),
-    };
-
-    // Se já existe um pedido aberto, adiciona o ID para atualizar
-    if (pedidosExistentes) {
-      pedidoParaEnviar.id = pedidosExistentes.id;
-    }
-
-    // Envia o pedido (upsert com id se existir)
-    const { error: upsertError } = await supabase
-      .from("pedidos")
-      .upsert(pedidoParaEnviar);
-
-    if (!upsertError) {
-      setMesaFechada(false);
-    } else {
-      console.error("Erro ao salvar pedido:", upsertError);
-      alert("Erro ao enviar o pedido. Tente novamente.");
-    }
-  } catch (err) {
-    console.error("Erro inesperado ao enviar pedido:", err);
-    alert("Erro inesperado. Tente novamente.");
-  }
-};
-
-
-  // 🔹 Fechar mesa
-const fecharMesa = async () => {
-  if (!formaPagamento) {
-    alert("Selecione uma forma de pagamento!");
-    return;
-  }
-
-  try {
-    // 🔍 Buscar o pedido aberto
-    const { data: pedidoAberto, error: fetchError } = await supabase
-      .from("pedidos")
-      .select("id")
-      .eq("mesa_id", id)
-      .eq("status", "aberto")
-      .limit(1)
-      .maybeSingle();
-
-    if (fetchError || !pedidoAberto) {
-      alert("Nenhum pedido aberto encontrado para esta mesa.");
+    if (novoPedido.length === 0) {
+      alert("Selecione pelo menos um item para enviar!");
       return;
     }
 
-    // 🔁 Atualizar pedido existente (fechando)
-    const { error } = await supabase
-      .from("pedidos")
-      .update({
-        status: "fechado",
-        pagamento: formaPagamento,
-      })
-      .eq("id", pedidoAberto.id); // usa o ID diretamente
+    setPedidoEnviado(novoPedido);
+    setSelectedItems([]);
+    setModalVisible(false);
 
-    if (!error) {
-      setMesaFechada(true);
-      setPedidoEnviado([]);
-      alert("Mesa fechada com sucesso!");
-    } else {
-      console.error("Erro ao fechar mesa:", error);
-      alert("Erro ao fechar a mesa. Tente novamente.");
+    try {
+      // 🔍 Verifica se já existe um pedido ABERTO para essa mesa
+      const { data: pedidosExistentes, error: fetchError } = await supabase
+        .from("pedidos")
+        .select("id")
+        .eq("mesa_id", id)
+        .eq("status", "aberto")
+        .limit(1)
+        .maybeSingle();
+
+      // Cria objeto do pedido para enviar
+      const pedidoParaEnviar = {
+        mesa_id: id,
+        itens: novoPedido,
+        status: "aberto",
+        total: calcularTotal(novoPedido),
+      };
+
+      // Se já existe um pedido aberto, adiciona o ID para atualizar
+      if (pedidosExistentes) {
+        pedidoParaEnviar.id = pedidosExistentes.id;
+      }
+
+      // Envia o pedido (upsert com id se existir)
+      const { error: upsertError } = await supabase
+        .from("pedidos")
+        .upsert(pedidoParaEnviar);
+
+      if (!upsertError) {
+        setMesaFechada(false);
+      } else {
+        console.error("Erro ao salvar pedido:", upsertError);
+        alert("Erro ao enviar o pedido. Tente novamente.");
+      }
+    } catch (err) {
+      console.error("Erro inesperado ao enviar pedido:", err);
+      alert("Erro inesperado. Tente novamente.");
     }
-  } catch (err) {
-    console.error("Erro inesperado ao fechar a mesa:", err);
-    alert("Erro inesperado. Tente novamente.");
-  }
-};
+  };
 
+  // 🔹 Fechar mesa
+  const fecharMesa = async () => {
+    if (!formaPagamento) {
+      alert("Selecione uma forma de pagamento!");
+      return;
+    }
+
+    try {
+      // 🔍 Buscar o pedido aberto
+      const { data: pedidoAberto, error: fetchError } = await supabase
+        .from("pedidos")
+        .select("id")
+        .eq("mesa_id", id)
+        .eq("status", "aberto")
+        .limit(1)
+        .maybeSingle();
+
+      if (fetchError || !pedidoAberto) {
+        alert("Nenhum pedido aberto encontrado para esta mesa.");
+        return;
+      }
+
+      // 🔁 Atualizar pedido existente (fechando)
+      const { error } = await supabase
+        .from("pedidos")
+        .update({
+          status: "fechado",
+          pagamento: formaPagamento,
+        })
+        .eq("id", pedidoAberto.id); // usa o ID diretamente
+
+      if (!error) {
+        setMesaFechada(true);
+        setPedidoEnviado([]);
+        alert("Mesa fechada com sucesso!");
+      } else {
+        console.error("Erro ao fechar mesa:", error);
+        alert("Erro ao fechar a mesa. Tente novamente.");
+      }
+    } catch (err) {
+      console.error("Erro inesperado ao fechar a mesa:", err);
+      alert("Erro inesperado. Tente novamente.");
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -276,7 +277,9 @@ const fecharMesa = async () => {
                       styles.closeButton,
                       {
                         backgroundColor:
-                          formaPagamento === "dinheiro" ? Colors.gold : Colors.acafrao,
+                          formaPagamento === "dinheiro"
+                            ? Colors.gold
+                            : Colors.acafrao,
                       },
                     ]}
                     onPress={() => setFormaPagamento("dinheiro")}
@@ -288,7 +291,9 @@ const fecharMesa = async () => {
                       styles.closeButton,
                       {
                         backgroundColor:
-                          formaPagamento === "cartao" ? Colors.gold : Colors.acafrao,
+                          formaPagamento === "cartao"
+                            ? Colors.gold
+                            : Colors.acafrao,
                       },
                     ]}
                     onPress={() => setFormaPagamento("cartão")}
@@ -300,7 +305,9 @@ const fecharMesa = async () => {
                       styles.closeButton,
                       {
                         backgroundColor:
-                          formaPagamento === "pix" ? Colors.gold : Colors.acafrao,
+                          formaPagamento === "pix"
+                            ? Colors.gold
+                            : Colors.acafrao,
                       },
                     ]}
                     onPress={() => setFormaPagamento("pix")}
@@ -326,6 +333,14 @@ const fecharMesa = async () => {
             )}
           </>
         )}
+        <Pressable style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color={Colors.gold}
+            style={{ alignSelf: "center", marginTop: 8 }}
+          />
+        </Pressable>
       </View>
 
       {/* Modal de Itens */}
@@ -449,6 +464,17 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     marginTop: 4,
+  },
+  backButton: {
+    position: "absolute",
+    width: 40,
+    height: 40,
+    top: 0,
+    left: 0,
+    alignSelf: "center",
+    borderRadius: 8,
+    zIndex: 0,
+    backgroundColor: Colors.acafrao,
   },
   modalOverlay: {
     flex: 1,

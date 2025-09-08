@@ -1,3 +1,4 @@
+import React from "react";
 import { useState } from "react";
 import Colors from "@/constants/Colors";
 import { SafeAreaView } from "react-native-safe-area-context";
