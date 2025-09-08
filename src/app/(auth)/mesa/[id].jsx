@@ -272,19 +272,37 @@ const fecharMesa = async () => {
                 </Text>
                 <View style={{ flexDirection: "row", gap: 10 }}>
                   <TouchableOpacity
-                    style={styles.closeButton}
+                    style={[
+                      styles.closeButton,
+                      {
+                        backgroundColor:
+                          formaPagamento === "dinheiro" ? Colors.gold : Colors.acafrao,
+                      },
+                    ]}
                     onPress={() => setFormaPagamento("dinheiro")}
                   >
                     <Text style={styles.closeButtonText}>Dinheiro</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.closeButton}
+                    style={[
+                      styles.closeButton,
+                      {
+                        backgroundColor:
+                          formaPagamento === "cartao" ? Colors.gold : Colors.acafrao,
+                      },
+                    ]}
                     onPress={() => setFormaPagamento("cartão")}
                   >
                     <Text style={styles.closeButtonText}>Cartão</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.closeButton}
+                    style={[
+                      styles.closeButton,
+                      {
+                        backgroundColor:
+                          formaPagamento === "pix" ? Colors.gold : Colors.acafrao,
+                      },
+                    ]}
                     onPress={() => setFormaPagamento("pix")}
                   >
                     <Text style={styles.closeButtonText}>PIX</Text>

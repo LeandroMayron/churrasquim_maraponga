@@ -37,7 +37,7 @@ const Salao = () => {
       .select("mesa_id, status");
 
     if (!error && data) {
-      const totalMesas = mesas.length > 0 ? mesas.length : 10;
+      const totalMesas = mesas.length > 0 ? mesas.length : 20;
       const mesasAtualizadas = Array.from({ length: totalMesas }, (_, i) => {
         const mesaId = i + 1;
         const pedidoAberto = data.find(
