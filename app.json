@@ -22,7 +22,14 @@
         "backgroundColor": "#000"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.churrasquim_maraponga"
+      "package": "com.anonymous.churrasquim_maraponga",
+      "permissions": [
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "ACCESS_FINE_LOCATION",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_SCAN"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -34,6 +41,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "365547c8-bdd4-4f4f-9bde-7ef531061c2a"
+      }
     }
   }
 }
