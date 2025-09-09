@@ -15,6 +15,8 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../../../lib/supabase";
 
+
+
 export default function Mesa() {
   const { id } = useLocalSearchParams();
   const [modalVisible, setModalVisible] = useState(false);
@@ -194,15 +196,10 @@ export default function Mesa() {
 
   // 🔹 Fechar mesa
 const fecharMesa = async () => {
-  if (!formaPagamento) {
-    alert("Selecione uma forma de pagamento!");
-    return;
-  }
-
   try {
     const { data: pedidoAberto, error: fetchError } = await supabase
       .from("pedidos")
-      .select("*")
+      .select("id")
       .eq("mesa_id", id)
       .eq("status", "aberto")
       .limit(1)
@@ -213,11 +210,6 @@ const fecharMesa = async () => {
       return;
     }
 
-    // 🟡 Salva os itens e pagamento para o modal
-    setDadosParaImpressao(pedidoAberto.itens);
-    setFormaPagamento(pedidoAberto.pagamento || formaPagamento);
-
-    // 🔁 Atualiza o pedido para "fechado"
     const { error } = await supabase
       .from("pedidos")
       .update({
@@ -227,10 +219,10 @@ const fecharMesa = async () => {
       .eq("id", pedidoAberto.id);
 
     if (!error) {
+      await imprimirReciboBluetooth(); // 🖨️ Imprime recibo antes de limpar
       setMesaFechada(true);
-      setPedidoEnviado([]); // limpa visualmente
-      setConfirmModalVisible(false);
-      setModalImpressaoVisivel(true); // 🟢 abre modal de impressão
+      setPedidoEnviado([]);
+      alert("Mesa fechada com sucesso!");
     } else {
       console.error("Erro ao fechar mesa:", error);
       alert("Erro ao fechar a mesa. Tente novamente.");
@@ -238,6 +230,107 @@ const fecharMesa = async () => {
   } catch (err) {
     console.error("Erro inesperado ao fechar a mesa:", err);
     alert("Erro inesperado. Tente novamente.");
+  }
+};
+
+
+const imprimirReciboBluetooth = async () => {
+  try {
+    const isEnabled = await BluetoothManager.isBluetoothEnabled();
+    if (!isEnabled) {
+      alert("Bluetooth está desligado. Ative para imprimir.");
+      return;
+    }
+
+    const paired = await BluetoothManager.enableBluetooth();
+    const firstPrinter = paired?.[0];
+
+    if (!firstPrinter) {
+      alert("Nenhuma impressora Bluetooth pareada encontrada.");
+      return;
+    }
+
+    await BluetoothManager.connect(firstPrinter.address);
+
+    // Nome da empresa - centralizado, negrito, tamanho grande
+    await BluetoothEscposPrinter.printText("CHURRASQUINHO MARAPONGA\n", {
+      encoding: "GBK",
+      codepage: 0,
+      widthtimes: 3,
+      heigthtimes: 3,
+      fonttype: 1,
+      align: BluetoothEscposPrinter.ALIGN.CENTER,
+    });
+
+    // CNPJ e endereço - centralizado, tamanho normal
+    await BluetoothEscposPrinter.printText("CNPJ: 12.345.678/0001-99\n", {
+      align: BluetoothEscposPrinter.ALIGN.CENTER,
+    });
+    await BluetoothEscposPrinter.printText(
+      "Rua do Churrasco, 123 - Fortaleza\n\n",
+      {
+        align: BluetoothEscposPrinter.ALIGN.CENTER,
+      }
+    );
+
+    // Data e hora - alinhado à esquerda
+    const agora = new Date();
+    await BluetoothEscposPrinter.printText(
+      `Data/Hora: ${agora.toLocaleString()}\n`,
+      {
+        align: BluetoothEscposPrinter.ALIGN.LEFT,
+      }
+    );
+
+    await BluetoothEscposPrinter.printText(
+      "--------------------------------\n",
+      {}
+    );
+
+    // Itens do pedido - alinhado à esquerda
+    for (const item of pedidoEnviado) {
+      const linha = `${item.quantity}x ${item.name} - R$ ${(
+        item.quantity * item.price
+      ).toFixed(2)}\n`;
+      await BluetoothEscposPrinter.printText(linha, {
+        align: BluetoothEscposPrinter.ALIGN.LEFT,
+      });
+    }
+
+    await BluetoothEscposPrinter.printText(
+      "--------------------------------\n",
+      {}
+    );
+
+    // Total - negrito, tamanho maior, alinhado à esquerda
+    await BluetoothEscposPrinter.printText(
+      `Total: R$ ${calcularTotal().toFixed(2)}\n`,
+      {
+        widthtimes: 2,
+        heigthtimes: 2,
+        fonttype: 1,
+        align: BluetoothEscposPrinter.ALIGN.LEFT,
+      }
+    );
+
+    // Forma de pagamento - alinhado à esquerda
+    await BluetoothEscposPrinter.printText(
+      `Pagamento: ${formaPagamento?.toUpperCase()}\n\n`,
+      {
+        align: BluetoothEscposPrinter.ALIGN.LEFT,
+      }
+    );
+
+    // Mensagem de agradecimento - centralizado
+    await BluetoothEscposPrinter.printText("Obrigado pela preferência!\n\n\n", {
+      align: BluetoothEscposPrinter.ALIGN.CENTER,
+    });
+
+    // Alimentar papel
+    await BluetoothEscposPrinter.printText("\n\n\n", {});
+  } catch (error) {
+    console.error("Erro ao imprimir:", error);
+    alert("Erro ao imprimir recibo.");
   }
 };
 
@@ -330,10 +423,7 @@ const fecharMesa = async () => {
                     styles.closeButton,
                     { backgroundColor: Colors.gold, marginTop: 12 },
                   ]}
-                  onPress={() => {
-                    setConfirmModalVisible(true);
-                    fecharMesa();
-                  }}
+                  onPress={() => setConfirmModalVisible(true)}
                 >
                   <Text
                     style={[styles.closeButtonText, { color: Colors.black }]}
@@ -477,6 +567,73 @@ const fecharMesa = async () => {
           </View>
         </View>
       </Modal>
+
+      <Modal
+        visible={confirmModalVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setConfirmModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmModalContent}>
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: "bold",
+                marginBottom: 12,
+                color: Colors.gold,
+              }}
+            >
+              Confirmar fechamento da Mesa {id}?
+            </Text>
+
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                width: "100%",
+              }}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.closeButton,
+                  { backgroundColor: Colors.gray, flex: 1, marginRight: 10 },
+                ]}
+                onPress={() => setConfirmModalVisible(false)}
+              >
+                <Text
+                  style={[
+                    styles.closeButtonText,
+                    { color: Colors.black, textAlign: "center" },
+                  ]}
+                >
+                  Cancelar
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.closeButton,
+                  { backgroundColor: Colors.gold, flex: 1 },
+                ]}
+                onPress={() => {
+                  fecharMesa();
+                  setConfirmModalVisible(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.closeButtonText,
+                    { color: Colors.black, textAlign: "center" },
+                  ]}
+                >
+                  Confirmar
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -603,12 +760,6 @@ const styles = StyleSheet.create({
     width: "80%",
     alignItems: "center",
   },
-  confirmModalContent: {
-  backgroundColor: Colors.white,
-  borderRadius: 12,
-  padding: 20,
-  width: "80%",
-  alignItems: "center",
-},
+
 
 });

@@ -21,10 +21,6 @@ const ITEM_MARGIN = 12;
 const ITEM_WIDTH =
   (SCREEN_WIDTH - ITEM_MARGIN * (NUM_COLUMNS + 1)) / NUM_COLUMNS;
 
-type Mesa = {
-  id: number;
-  status: "livre" | "aberto";
-};
 
 const Salao = () => {
   const [mesas, setMesas] = useState([]);
