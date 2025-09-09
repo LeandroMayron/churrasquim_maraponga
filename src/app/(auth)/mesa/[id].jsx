@@ -24,6 +24,7 @@ export default function Mesa() {
   const [pedidoEnviado, setPedidoEnviado] = useState([]);
   const [mesaFechada, setMesaFechada] = useState(false);
   const [formaPagamento, setFormaPagamento] = useState(null);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
 
   // 🔹 Carregar pedidos + realtime
   useEffect(() => {
@@ -189,6 +190,7 @@ export default function Mesa() {
   };
 
   // 🔹 Fechar mesa
+  // 🔹 Fechar mesa (corrigido e funcional)
   const fecharMesa = async () => {
     if (!formaPagamento) {
       alert("Selecione uma forma de pagamento!");
@@ -217,7 +219,7 @@ export default function Mesa() {
           status: "fechado",
           pagamento: formaPagamento,
         })
-        .eq("id", pedidoAberto.id); // usa o ID diretamente
+        .eq("id", pedidoAberto.id);
 
       if (!error) {
         setMesaFechada(true);
@@ -321,7 +323,10 @@ export default function Mesa() {
                     styles.closeButton,
                     { backgroundColor: Colors.gold, marginTop: 12 },
                   ]}
-                  onPress={fecharMesa}
+                  onPress={() => {
+                    setConfirmModalVisible(true);
+                    fecharMesa();
+                  }}
                 >
                   <Text
                     style={[styles.closeButtonText, { color: Colors.black }]}
@@ -412,6 +417,51 @@ export default function Mesa() {
             >
               <Text style={styles.closeButtonText}>Fechar</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={confirmModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setConfirmModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmModalContent}>
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: "bold",
+                marginBottom: 20,
+                color: Colors.gold,
+              }}
+            >
+              Confirma o fechamento da mesa?
+            </Text>
+            <View
+              style={{ flexDirection: "row", justifyContent: "space-around" }}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.closeButton,
+                  { backgroundColor: Colors.acafrao, marginRight: 10 },
+                ]}
+                onPress={() => setConfirmModalVisible(false)}
+              >
+                <Text style={styles.closeButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.closeButton, { backgroundColor: Colors.gold }]}
+                onPress={() => {
+                  setConfirmModalVisible(false);
+                  fecharMesa(); // chama a função que fecha a mesa
+                }}
+              >
+                <Text style={[styles.closeButtonText, { color: Colors.black }]}>
+                  Confirmar
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -534,4 +584,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   closeButtonText: { color: Colors.white, fontWeight: "bold", fontSize: 16 },
+  confirmModalContent: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: 20,
+    width: "80%",
+    alignItems: "center",
+  },
+  confirmModalContent: {
+  backgroundColor: Colors.white,
+  borderRadius: 12,
+  padding: 20,
+  width: "80%",
+  alignItems: "center",
+},
+
 });
