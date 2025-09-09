@@ -25,7 +25,10 @@ export default function Mesa() {
   const [mesaFechada, setMesaFechada] = useState(false);
   const [formaPagamento, setFormaPagamento] = useState(null);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [dadosParaImpressao, setDadosParaImpressao] = useState([]);
+  const [modalImpressaoVisivel, setModalImpressaoVisivel] = useState(false);
 
+ 
   // 🔹 Carregar pedidos + realtime
   useEffect(() => {
     const carregarPedidos = async () => {
@@ -190,50 +193,54 @@ export default function Mesa() {
   };
 
   // 🔹 Fechar mesa
-  // 🔹 Fechar mesa (corrigido e funcional)
-  const fecharMesa = async () => {
-    if (!formaPagamento) {
-      alert("Selecione uma forma de pagamento!");
+const fecharMesa = async () => {
+  if (!formaPagamento) {
+    alert("Selecione uma forma de pagamento!");
+    return;
+  }
+
+  try {
+    const { data: pedidoAberto, error: fetchError } = await supabase
+      .from("pedidos")
+      .select("*")
+      .eq("mesa_id", id)
+      .eq("status", "aberto")
+      .limit(1)
+      .maybeSingle();
+
+    if (fetchError || !pedidoAberto) {
+      alert("Nenhum pedido aberto encontrado para esta mesa.");
       return;
     }
 
-    try {
-      // 🔍 Buscar o pedido aberto
-      const { data: pedidoAberto, error: fetchError } = await supabase
-        .from("pedidos")
-        .select("id")
-        .eq("mesa_id", id)
-        .eq("status", "aberto")
-        .limit(1)
-        .maybeSingle();
+    // 🟡 Salva os itens e pagamento para o modal
+    setDadosParaImpressao(pedidoAberto.itens);
+    setFormaPagamento(pedidoAberto.pagamento || formaPagamento);
 
-      if (fetchError || !pedidoAberto) {
-        alert("Nenhum pedido aberto encontrado para esta mesa.");
-        return;
-      }
+    // 🔁 Atualiza o pedido para "fechado"
+    const { error } = await supabase
+      .from("pedidos")
+      .update({
+        status: "fechado",
+        pagamento: formaPagamento,
+      })
+      .eq("id", pedidoAberto.id);
 
-      // 🔁 Atualizar pedido existente (fechando)
-      const { error } = await supabase
-        .from("pedidos")
-        .update({
-          status: "fechado",
-          pagamento: formaPagamento,
-        })
-        .eq("id", pedidoAberto.id);
-
-      if (!error) {
-        setMesaFechada(true);
-        setPedidoEnviado([]);
-        alert("Mesa fechada com sucesso!");
-      } else {
-        console.error("Erro ao fechar mesa:", error);
-        alert("Erro ao fechar a mesa. Tente novamente.");
-      }
-    } catch (err) {
-      console.error("Erro inesperado ao fechar a mesa:", err);
-      alert("Erro inesperado. Tente novamente.");
+    if (!error) {
+      setMesaFechada(true);
+      setPedidoEnviado([]); // limpa visualmente
+      setConfirmModalVisible(false);
+      setModalImpressaoVisivel(true); // 🟢 abre modal de impressão
+    } else {
+      console.error("Erro ao fechar mesa:", error);
+      alert("Erro ao fechar a mesa. Tente novamente.");
     }
-  };
+  } catch (err) {
+    console.error("Erro inesperado ao fechar a mesa:", err);
+    alert("Erro inesperado. Tente novamente.");
+  }
+};
+
 
   return (
     <View style={styles.container}>
@@ -421,10 +428,10 @@ export default function Mesa() {
         </View>
       </Modal>
       <Modal
-        visible={confirmModalVisible}
-        transparent={true}
+        visible={modalImpressaoVisivel}
         animationType="fade"
-        onRequestClose={() => setConfirmModalVisible(false)}
+        transparent={true}
+        onRequestClose={() => setModalImpressaoVisivel(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.confirmModalContent}>
@@ -432,36 +439,41 @@ export default function Mesa() {
               style={{
                 fontSize: 18,
                 fontWeight: "bold",
-                marginBottom: 20,
+                marginBottom: 12,
                 color: Colors.gold,
               }}
             >
-              Confirma o fechamento da mesa?
+              Comanda da Mesa {id}
             </Text>
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-around" }}
-            >
-              <TouchableOpacity
-                style={[
-                  styles.closeButton,
-                  { backgroundColor: Colors.acafrao, marginRight: 10 },
-                ]}
-                onPress={() => setConfirmModalVisible(false)}
-              >
-                <Text style={styles.closeButtonText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.closeButton, { backgroundColor: Colors.gold }]}
-                onPress={() => {
-                  setConfirmModalVisible(false);
-                  fecharMesa(); // chama a função que fecha a mesa
-                }}
-              >
-                <Text style={[styles.closeButtonText, { color: Colors.black }]}>
-                  Confirmar
+            <ScrollView style={{ maxHeight: 300 }}>
+              {dadosParaImpressao.map((item, index) => (
+                <Text key={index} style={{ fontSize: 16, marginBottom: 4 }}>
+                  {item.quantity}x {item.name} — R${" "}
+                  {(item.quantity * item.price).toFixed(2)}
                 </Text>
-              </TouchableOpacity>
-            </View>
+              ))}
+            </ScrollView>
+            <Text style={{ marginTop: 10, fontWeight: "bold" }}>
+              Total: R$ {calcularTotal(dadosParaImpressao).toFixed(2)}
+            </Text>
+            <Text style={{ marginTop: 4 }}>
+              Pagamento:{" "}
+              <Text style={{ fontWeight: "bold" }}>
+                {formaPagamento?.toUpperCase()}
+              </Text>
+            </Text>
+
+            <TouchableOpacity
+              style={[
+                styles.closeButton,
+                { backgroundColor: Colors.gold, marginTop: 20 },
+              ]}
+              onPress={() => setModalImpressaoVisivel(false)}
+            >
+              <Text style={[styles.closeButtonText, { color: Colors.black }]}>
+                Fechar
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
