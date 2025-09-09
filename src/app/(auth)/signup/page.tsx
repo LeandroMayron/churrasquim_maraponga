@@ -26,28 +26,45 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  async function handleSignUp() {
-    setLoading(true);
+async function handleSignUp() {
+  setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-      options: {
-        data: {
-          name: name,
-        },
-      },
-    });
+  // 1. Verificar se o email está aprovado
+  const { data: approvedEmail, error: checkError } = await supabase
+    .from("approved_emails")
+    .select("email")
+    .eq("email", email.toLowerCase())
+    .single();
 
-    if (error) {
-      Alert.alert("Erro", error.message);
-      setLoading(false);
-      return;
-    }
-
+  if (checkError || !approvedEmail) {
+    Alert.alert(
+      "Cadastro bloqueado",
+      "Este email não está autorizado a se cadastrar."
+    );
     setLoading(false);
-    router.replace("/");
+    return;
   }
+
+  // 2. Se aprovado, fazer o cadastro normalmente
+  const { error } = await supabase.auth.signUp({
+    email: email.toLowerCase(),
+    password: password,
+    options: {
+      data: {
+        name: name,
+      },
+    },
+  });
+
+  if (error) {
+    Alert.alert("Erro", error.message);
+    setLoading(false);
+    return;
+  }
+
+  setLoading(false);
+  router.replace("/");
+}
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
