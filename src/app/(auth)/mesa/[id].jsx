@@ -15,6 +15,29 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../../../lib/supabase";
 import { BLEPrinter } from "@xyzsola/react-native-thermal-printer";
+import { PermissionsAndroid, Platform } from "react-native";
+
+async function solicitarPermissoesBluetooth() {
+  if (Platform.OS === "android" && Platform.Version >= 31) {
+    const granted = await PermissionsAndroid.requestMultiple([
+      PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+      PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+    ]);
+
+    const conectou =
+      granted["android.permission.BLUETOOTH_CONNECT"] === "granted";
+    const escaneou = granted["android.permission.BLUETOOTH_SCAN"] === "granted";
+
+    if (!conectou || !escaneou) {
+      alert("Permissões de Bluetooth negadas. Não é possível imprimir.");
+      return false;
+    }
+  }
+
+  return true;
+}
+
+
 
 export default function Mesa() {
   const { id } = useLocalSearchParams();
@@ -343,51 +366,56 @@ export default function Mesa() {
     }
   };
 
-  const printCupom = async () => {
-    try {
-      await BLEPrinter.init();
-      const devices = await BLEPrinter.getDeviceList();
-      if (!devices.length) {
-        alert("Nenhuma impressora Bluetooth encontrada!");
-        return;
-      }
-      await BLEPrinter.connectPrinter(devices[0].innerMacAddress);
+const printCupom = async () => {
+  const permissaoOk = await solicitarPermissoesBluetooth(); // <- VERIFICA PERMISSÕES
+  if (!permissaoOk) return;
 
-      const linhas = dadosParaImpressao
-        .map(
-          (item) =>
-            `${item.quantity}x ${item.name} — R$ ${(
-              item.quantity * item.price
-            ).toFixed(2)}`
-        )
-        .join("\n");
-
-      const total = calcularTotal(dadosParaImpressao).toFixed(2);
-
-      const payload = `
-        <Text align="center" bold="1" fontWidth="2" fontHeight="2">CHURRASQUINHO MARAPONGA</Text>
-        <NewLine /><Line lineChar="-" />
-        <Text align="left">Mesa ${id}</Text><NewLine />
-        ${linhas}
-        <Line lineChar="-" />
-        <Text align="right" bold="1">Total: R$ ${total}</Text>
-        <NewLine />
-        <Text align="left">Pagamento: ${formaPagamento?.toUpperCase()}</Text>
-        <NewLine />
-        <Text align="center">Obrigado pela preferência!</Text>
-        <NewLine /><NewLine />
-        `;
-
-      await BLEPrinter.print(payload, {
-        beep: true,
-        cut: true,
-        tailingLine: true,
-      });
-    } catch (err) {
-      console.error("Erro ao imprimir:", err);
-      alert("Falha ao imprimir no Bluetooth.");
+  try {
+    await BLEPrinter.init();
+    const devices = await BLEPrinter.getDeviceList();
+    if (!devices.length) {
+      alert("Nenhuma impressora Bluetooth encontrada!");
+      return;
     }
-  };
+    await BLEPrinter.connectPrinter(devices[0].innerMacAddress);
+
+    const linhas = dadosParaImpressao
+      .map(
+        (item) =>
+          `${item.quantity}x ${item.name} — R$ ${(
+            item.quantity * item.price
+          ).toFixed(2)}`
+      )
+      .join("\n");
+
+    const total = calcularTotal(dadosParaImpressao).toFixed(2);
+
+    const payload = `
+      <Text align="center" bold="1" fontWidth="2" fontHeight="2">CHURRASQUINHO MARAPONGA</Text>
+      <NewLine /><Line lineChar="-" />
+      <Text align="left">Mesa ${id}</Text><NewLine />
+      ${linhas}
+      <Line lineChar="-" />
+      <Text align="right" bold="1">Total: R$ ${total}</Text>
+      <NewLine />
+      <Text align="left">Pagamento: ${formaPagamento?.toUpperCase()}</Text>
+      <NewLine />
+      <Text align="center">Obrigado pela preferência!</Text>
+      <NewLine /><NewLine />
+    `;
+
+    await BLEPrinter.print(payload, {
+      beep: true,
+      cut: true,
+      tailingLine: true,
+    });
+  } catch (err) {
+    console.error("Erro ao imprimir:", err);
+    alert("Falha ao imprimir no Bluetooth.");
+  }
+};
+
+
 
   return (
     <View style={styles.container}>
