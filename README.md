@@ -120,3 +120,7 @@ cd android
 ./gradlew clean
 cd ..
 npx expo run:android
+
+criar novo apk internal distribution
+  eas build -p android --profile preview
+

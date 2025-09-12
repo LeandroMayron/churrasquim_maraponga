@@ -6,7 +6,7 @@ buildscript {
     minSdkVersion = 21
     compileSdkVersion = 33
     targetSdkVersion = 33
-    kotlinVersion = "1.8.0"
+    ext.kotlinVersion = "1.8.20"
   }
 
   repositories {
@@ -15,10 +15,11 @@ buildscript {
   }
 
   dependencies {
-    classpath('com.android.tools.build:gradle:7.4.2')
+    classpath("com.android.tools.build:gradle:8.4.0")
     classpath('com.facebook.react:react-native-gradle-plugin')
-    classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.0")
+    classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion") // ✅ Corrigido
   }
+
 }
 
 def reactNativeAndroidDir = new File(rootDir, 'node_modules/react-native/android')
