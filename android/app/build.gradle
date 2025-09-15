@@ -4,6 +4,11 @@ apply plugin: "com.facebook.react"
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
+// Adicione esta seção para garantir que as propriedades estejam disponíveis
+def safeExtGet(prop, fallback) {
+    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+}
+
 react {
     entryFile = file(["node", "-e", "require('expo/scripts/resolveAppEntry')", projectRoot, "android", "absolute"].execute(null, rootDir).text.trim())
     reactNativeDir = new File(["node", "--print", "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim()).getParentFile().getAbsoluteFile()
@@ -18,55 +23,61 @@ react {
 }
 
 def enableProguardInReleaseBuilds = (findProperty('android.enableProguardInReleaseBuilds') ?: false).toBoolean()
-
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
 android {
-    ndkVersion rootProject.ext.ndkVersion
-    buildToolsVersion rootProject.ext.buildToolsVersion
-    compileSdk rootProject.ext.compileSdkVersion
+    namespace "com.anonymous.churrasquim_maraponga"
+    
+    // Use a função safeExtGet para acessar as propriedades de forma segura
+    ndkVersion safeExtGet('ndkVersion', '27.1.12297006')
+    buildToolsVersion safeExtGet('buildToolsVersion', '35.0.0')
+    compileSdk safeExtGet('compileSdkVersion', 35).toInteger()
 
-    namespace 'com.anonymous.churrasquim_maraponga'
     defaultConfig {
-        applicationId 'com.anonymous.churrasquim_maraponga'
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        applicationId "com.anonymous.churrasquim_maraponga"
+        minSdkVersion safeExtGet('minSdkVersion', 24).toInteger()
+        targetSdkVersion safeExtGet('targetSdkVersion', 35).toInteger()
         versionCode 1
         versionName "1.0.0"
     }
+
     signingConfigs {
         debug {
-            storeFile file('debug.keystore')
-            storePassword 'android'
-            keyAlias 'androiddebugkey'
-            keyPassword 'android'
+            storeFile file("debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
         }
     }
+
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
             signingConfig signingConfigs.debug
-            shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
+            shrinkResources (findProperty("android.enableShrinkResourcesInReleaseBuilds")?.toBoolean() ?: false)
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
-            crunchPngs (findProperty('android.enablePngCrunchInReleaseBuilds')?.toBoolean() ?: true)
+            crunchPngs (findProperty("android.enablePngCrunchInReleaseBuilds")?.toBoolean() ?: true)
         }
     }
+
     packagingOptions {
         jniLibs {
-            useLegacyPackaging (findProperty('expo.useLegacyPackaging')?.toBoolean() ?: false)
+            useLegacyPackaging (findProperty("expo.useLegacyPackaging")?.toBoolean() ?: false)
         }
     }
+
     androidResources {
-        ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
+        ignoreAssetsPattern "!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~"
     }
 }
 
+// Apply static values from gradle.properties to android.packagingOptions
 ["pickFirsts", "excludes", "merges", "doNotStrip"].each { prop ->
-    def options = (findProperty("android.packagingOptions.$prop") ?: "").split(",");
-    for (i in 0..<options.size()) options[i] = options[i].trim();
+    def options = (findProperty("android.packagingOptions.$prop") ?: "").split(",")
+    for (i in 0..<options.size()) options[i] = options[i].trim()
     options -= ""
     if (options.length > 0) {
         println "android.packagingOptions.$prop += $options ($options.length)"
@@ -79,19 +90,23 @@ android {
 dependencies {
     implementation("com.facebook.react:react-android")
 
-    def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
-    def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";
-    def isWebpAnimatedEnabled = (findProperty('expo.webp.animated') ?: "") == "true";
+    def isGifEnabled = (findProperty("expo.gif.enabled") ?: "") == "true"
+    def isWebpEnabled = (findProperty("expo.webp.enabled") ?: "") == "true"
+    def isWebpAnimatedEnabled = (findProperty("expo.webp.animated") ?: "") == "true"
 
     if (isGifEnabled) {
         implementation("com.facebook.fresco:animated-gif:${expoLibs.versions.fresco.get()}")
     }
+
     if (isWebpEnabled) {
         implementation("com.facebook.fresco:webpsupport:${expoLibs.versions.fresco.get()}")
         if (isWebpAnimatedEnabled) {
             implementation("com.facebook.fresco:animated-webp:${expoLibs.versions.fresco.get()}")
         }
     }
+
+    // Use safeExtGet para hermesEnabled também
+    def hermesEnabled = safeExtGet('hermesEnabled', false)
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
     } else {
