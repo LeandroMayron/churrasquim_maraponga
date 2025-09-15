@@ -9,11 +9,35 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Pressable
+  Pressable,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../../../lib/supabase";
+import { BLEPrinter } from "@xyzsola/react-native-thermal-printer";
+import { PermissionsAndroid, Platform } from "react-native";
+
+async function solicitarPermissoesBluetooth() {
+  if (Platform.OS === "android" && Platform.Version >= 31) {
+    const granted = await PermissionsAndroid.requestMultiple([
+      PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+      PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+    ]);
+
+    const conectou =
+      granted["android.permission.BLUETOOTH_CONNECT"] === "granted";
+    const escaneou = granted["android.permission.BLUETOOTH_SCAN"] === "granted";
+
+    if (!conectou || !escaneou) {
+      alert("Permissões de Bluetooth negadas. Não é possível imprimir.");
+      return false;
+    }
+  }
+
+  return true;
+}
+
+
 
 export default function Mesa() {
   const { id } = useLocalSearchParams();
@@ -24,6 +48,9 @@ export default function Mesa() {
   const [pedidoEnviado, setPedidoEnviado] = useState([]);
   const [mesaFechada, setMesaFechada] = useState(false);
   const [formaPagamento, setFormaPagamento] = useState(null);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [dadosParaImpressao, setDadosParaImpressao] = useState([]);
+  const [modalImpressaoVisivel, setModalImpressaoVisivel] = useState(false);
 
   // 🔹 Carregar pedidos + realtime
   useEffect(() => {
@@ -191,15 +218,16 @@ export default function Mesa() {
   // 🔹 Fechar mesa
   const fecharMesa = async () => {
     if (!formaPagamento) {
-      alert("Selecione uma forma de pagamento!");
+      alert("Selecione a forma de pagamento antes de fechar a mesa.");
       return;
     }
 
     try {
-      // 🔍 Buscar o pedido aberto
+      console.log("🔒 Tentando fechar a mesa...");
+
       const { data: pedidoAberto, error: fetchError } = await supabase
         .from("pedidos")
-        .select("id")
+        .select("id, itens")
         .eq("mesa_id", id)
         .eq("status", "aberto")
         .limit(1)
@@ -210,19 +238,21 @@ export default function Mesa() {
         return;
       }
 
-      // 🔁 Atualizar pedido existente (fechando)
       const { error } = await supabase
         .from("pedidos")
         .update({
           status: "fechado",
           pagamento: formaPagamento,
         })
-        .eq("id", pedidoAberto.id); // usa o ID diretamente
+        .eq("id", pedidoAberto.id);
 
       if (!error) {
+        console.log("✅ Mesa fechada com sucesso.");
+
+        setDadosParaImpressao(pedidoAberto.itens);
+        setModalImpressaoVisivel(true); // <-- ABRE O MODAL DE IMPRESSÃO
         setMesaFechada(true);
         setPedidoEnviado([]);
-        alert("Mesa fechada com sucesso!");
       } else {
         console.error("Erro ao fechar mesa:", error);
         alert("Erro ao fechar a mesa. Tente novamente.");
@@ -233,16 +263,168 @@ export default function Mesa() {
     }
   };
 
+  const imprimirReciboBluetooth = async () => {
+    try {
+      const isEnabled = await BluetoothManager.isBluetoothEnabled();
+      if (!isEnabled) {
+        alert("Bluetooth está desligado. Ative para imprimir.");
+        return;
+      }
+
+      const paired = await BluetoothManager.enableBluetooth();
+      const firstPrinter = paired?.[0];
+
+      if (!firstPrinter) {
+        alert("Nenhuma impressora Bluetooth pareada encontrada.");
+        return;
+      }
+
+      await BluetoothManager.connect(firstPrinter.address);
+
+      // Nome da empresa - centralizado, negrito, tamanho grande
+      await BluetoothEscposPrinter.printText("CHURRASQUINHO MARAPONGA\n", {
+        encoding: "GBK",
+        codepage: 0,
+        widthtimes: 3,
+        heigthtimes: 3,
+        fonttype: 1,
+        align: BluetoothEscposPrinter.ALIGN.CENTER,
+      });
+
+      // CNPJ e endereço - centralizado, tamanho normal
+      await BluetoothEscposPrinter.printText("CNPJ: 12.345.678/0001-99\n", {
+        align: BluetoothEscposPrinter.ALIGN.CENTER,
+      });
+      await BluetoothEscposPrinter.printText(
+        "Rua do Churrasco, 123 - Fortaleza\n\n",
+        {
+          align: BluetoothEscposPrinter.ALIGN.CENTER,
+        }
+      );
+
+      // Data e hora - alinhado à esquerda
+      const agora = new Date();
+      await BluetoothEscposPrinter.printText(
+        `Data/Hora: ${agora.toLocaleString()}\n`,
+        {
+          align: BluetoothEscposPrinter.ALIGN.LEFT,
+        }
+      );
+
+      await BluetoothEscposPrinter.printText(
+        "--------------------------------\n",
+        {}
+      );
+
+      // Itens do pedido - alinhado à esquerda
+      for (const item of pedidoEnviado) {
+        const linha = `${item.quantity}x ${item.name} - R$ ${(
+          item.quantity * item.price
+        ).toFixed(2)}\n`;
+        await BluetoothEscposPrinter.printText(linha, {
+          align: BluetoothEscposPrinter.ALIGN.LEFT,
+        });
+      }
+
+      await BluetoothEscposPrinter.printText(
+        "--------------------------------\n",
+        {}
+      );
+
+      // Total - negrito, tamanho maior, alinhado à esquerda
+      await BluetoothEscposPrinter.printText(
+        `Total: R$ ${calcularTotal().toFixed(2)}\n`,
+        {
+          widthtimes: 2,
+          heigthtimes: 2,
+          fonttype: 1,
+          align: BluetoothEscposPrinter.ALIGN.LEFT,
+        }
+      );
+
+      // Forma de pagamento - alinhado à esquerda
+      await BluetoothEscposPrinter.printText(
+        `Pagamento: ${formaPagamento?.toUpperCase()}\n\n`,
+        {
+          align: BluetoothEscposPrinter.ALIGN.LEFT,
+        }
+      );
+
+      // Mensagem de agradecimento - centralizado
+      await BluetoothEscposPrinter.printText(
+        "Obrigado pela preferência!\n\n\n",
+        {
+          align: BluetoothEscposPrinter.ALIGN.CENTER,
+        }
+      );
+
+      // Alimentar papel
+      await BluetoothEscposPrinter.printText("\n\n\n", {});
+    } catch (error) {
+      console.error("Erro ao imprimir:", error);
+      alert("Erro ao imprimir recibo.");
+    }
+  };
+
+const printCupom = async () => {
+  const permissaoOk = await solicitarPermissoesBluetooth(); // <- VERIFICA PERMISSÕES
+  if (!permissaoOk) return;
+
+  try {
+    await BLEPrinter.init();
+    const devices = await BLEPrinter.getDeviceList();
+    if (!devices.length) {
+      alert("Nenhuma impressora Bluetooth encontrada!");
+      return;
+    }
+    await BLEPrinter.connectPrinter(devices[0].innerMacAddress);
+
+    const linhas = dadosParaImpressao
+      .map(
+        (item) =>
+          `${item.quantity}x ${item.name} — R$ ${(
+            item.quantity * item.price
+          ).toFixed(2)}`
+      )
+      .join("\n");
+
+    const total = calcularTotal(dadosParaImpressao).toFixed(2);
+
+    const payload = `
+      <Text align="center" bold="1" fontWidth="2" fontHeight="2">CHURRASQUINHO MARAPONGA</Text>
+      <NewLine /><Line lineChar="-" />
+      <Text align="left">Mesa ${id}</Text><NewLine />
+      ${linhas}
+      <Line lineChar="-" />
+      <Text align="right" bold="1">Total: R$ ${total}</Text>
+      <NewLine />
+      <Text align="left">Pagamento: ${formaPagamento?.toUpperCase()}</Text>
+      <NewLine />
+      <Text align="center">Obrigado pela preferência!</Text>
+      <NewLine /><NewLine />
+    `;
+
+    await BLEPrinter.print(payload, {
+      beep: true,
+      cut: true,
+      tailingLine: true,
+    });
+  } catch (err) {
+    console.error("Erro ao imprimir:", err);
+    alert("Falha ao imprimir no Bluetooth.");
+  }
+};
+
+
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Mesa {id}</Text>
-
       {!mesaFechada && (
         <TouchableOpacity style={styles.button} onPress={abrirModal}>
           <Text style={styles.buttonText}>Fazer Pedido</Text>
         </TouchableOpacity>
       )}
-
       {/* Lista de pedidos enviados */}
       <View style={styles.pedidoContainer}>
         <Text style={styles.pedidoTitulo}>Pedidos Feitos</Text>
@@ -321,7 +503,15 @@ export default function Mesa() {
                     styles.closeButton,
                     { backgroundColor: Colors.gold, marginTop: 12 },
                   ]}
-                  onPress={fecharMesa}
+                  onPress={() => {
+                    if (!formaPagamento) {
+                      alert(
+                        "Selecione a forma de pagamento antes de fechar a mesa."
+                      );
+                    } else {
+                      setConfirmModalVisible(true);
+                    }
+                  }}
                 >
                   <Text
                     style={[styles.closeButtonText, { color: Colors.black }]}
@@ -342,7 +532,80 @@ export default function Mesa() {
           />
         </Pressable>
       </View>
+      {/* Modal de confirmação para fechar a mesa */}
+      <Modal
+        visible={confirmModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setConfirmModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmModalContent}>
+            <Text
+              style={{ fontSize: 18, fontWeight: "bold", marginBottom: 12 }}
+            >
+              Deseja realmente fechar a mesa?
+            </Text>
+            <Text style={{ marginBottom: 20 }}>
+              Isso encerrará os pedidos e enviará o cupom para impressão.
+            </Text>
+            <TouchableOpacity
+              style={[styles.closeButton, { backgroundColor: Colors.gold }]}
+              onPress={async () => {
+                console.log("🟡 Confirmar Fechamento pressionado");
+                setConfirmModalVisible(false);
+                await fecharMesa();
+              }}
+            >
+              <Text style={[styles.closeButtonText, { color: Colors.black }]}>
+                Confirmar Fechamento
+              </Text>
+            </TouchableOpacity>
 
+            <TouchableOpacity
+              style={[styles.closeButton, { marginTop: 10 }]}
+              onPress={() => setConfirmModalVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      
+      <Modal
+        visible={modalImpressaoVisivel}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setModalImpressaoVisivel(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmModalContent}>
+            {/* ... (conteúdo existente) ... */}
+
+            <TouchableOpacity
+              style={[
+                styles.closeButton,
+                { backgroundColor: Colors.acafrao, marginTop: 20 },
+              ]}
+              onPress={printCupom}
+            >
+              <Text style={styles.closeButtonText}>Imprimir Recibo</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.closeButton,
+                { backgroundColor: Colors.gold, marginTop: 10 },
+              ]}
+              onPress={() => setModalImpressaoVisivel(false)}
+            >
+              <Text style={[styles.closeButtonText, { color: Colors.black }]}>
+                Fechar
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
       {/* Modal de Itens */}
       <Modal
         visible={modalVisible}
@@ -534,4 +797,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   closeButtonText: { color: Colors.white, fontWeight: "bold", fontSize: 16 },
+  confirmModalContent: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: 20,
+    width: "80%",
+    alignItems: "center",
+  },
 });
