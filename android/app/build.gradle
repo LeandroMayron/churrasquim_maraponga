@@ -2,12 +2,15 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
-def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
-
-// Adicione esta seção para garantir que as propriedades estejam disponíveis
+// Função para acessar propriedades do rootProject de forma segura
 def safeExtGet(prop, fallback) {
-    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+    return rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
 }
+
+// Debug: listar todas as propriedades disponíveis no rootProject.ext
+println ">>> rootProject.ext props: " + rootProject.ext.properties
+
+def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
 react {
     entryFile = file(["node", "-e", "require('expo/scripts/resolveAppEntry')", projectRoot, "android", "absolute"].execute(null, rootDir).text.trim())
@@ -15,28 +18,28 @@ react {
     hermesCommand = new File(["node", "--print", "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim()).getParentFile().getAbsolutePath() + "/sdks/hermesc/%OS-BIN%/hermesc"
     codegenDir = new File(["node", "--print", "require.resolve('@react-native/codegen/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim()).getParentFile().getAbsoluteFile()
 
-    enableBundleCompression = (findProperty('android.enableBundleCompression') ?: false).toBoolean()
+    enableBundleCompression = (findProperty("android.enableBundleCompression") ?: false).toBoolean()
     cliFile = new File(["node", "--print", "require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] })"].execute(null, rootDir).text.trim())
     bundleCommand = "export:embed"
 
     autolinkLibrariesWithApp()
 }
 
-def enableProguardInReleaseBuilds = (findProperty('android.enableProguardInReleaseBuilds') ?: false).toBoolean()
-def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
+def enableProguardInReleaseBuilds = (findProperty("android.enableProguardInReleaseBuilds") ?: false).toBoolean()
+def jscFlavor = "io.github.react-native-community:jsc-android:2026004.+"
 
 android {
     namespace "com.anonymous.churrasquim_maraponga"
-    
-    // Use a função safeExtGet para acessar as propriedades de forma segura
-    ndkVersion safeExtGet('ndkVersion', '27.1.12297006')
-    buildToolsVersion safeExtGet('buildToolsVersion', '35.0.0')
-    compileSdk safeExtGet('compileSdkVersion', 35).toInteger()
+
+    // Usando safeExtGet
+    ndkVersion safeExtGet("ndkVersion", "27.1.12297006")
+    buildToolsVersion safeExtGet("buildToolsVersion", "35.0.0")
+    compileSdk safeExtGet("compileSdkVersion", 35)
 
     defaultConfig {
         applicationId "com.anonymous.churrasquim_maraponga"
-        minSdkVersion safeExtGet('minSdkVersion', 24).toInteger()
-        targetSdkVersion safeExtGet('targetSdkVersion', 35).toInteger()
+        minSdkVersion safeExtGet("minSdkVersion", 24)
+        targetSdkVersion safeExtGet("targetSdkVersion", 35)
         versionCode 1
         versionName "1.0.0"
     }
@@ -74,7 +77,7 @@ android {
     }
 }
 
-// Apply static values from gradle.properties to android.packagingOptions
+// Gradle packaging options
 ["pickFirsts", "excludes", "merges", "doNotStrip"].each { prop ->
     def options = (findProperty("android.packagingOptions.$prop") ?: "").split(",")
     for (i in 0..<options.size()) options[i] = options[i].trim()
@@ -105,8 +108,7 @@ dependencies {
         }
     }
 
-    // Use safeExtGet para hermesEnabled também
-    def hermesEnabled = safeExtGet('hermesEnabled', false)
+    def hermesEnabled = safeExtGet("hermesEnabled", false)
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
     } else {

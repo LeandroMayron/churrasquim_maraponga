@@ -1,11 +1,10 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.anonymous.churrasquim_maraponga">
 
-  <!-- 🔐 Permissões de acesso e Bluetooth -->
+  <!-- 🔐 Permissões -->
   <uses-permission android:name="android.permission.INTERNET"/>
-  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
   <uses-permission android:name="android.permission.VIBRATE"/>
-  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 
   <!-- 🔗 Bluetooth (necessário a partir do Android 12) -->
@@ -14,17 +13,14 @@
   <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
   <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
 
-  <!-- 🔍 Permissões de queries para descobrir dispositivos Bluetooth -->
+  <!-- 🔍 Queries (Android 11+) -->
   <queries>
-    <!-- Permite escanear dispositivos Bluetooth -->
     <intent>
       <action android:name="android.bluetooth.adapter.action.REQUEST_ENABLE" />
     </intent>
     <intent>
       <action android:name="android.bluetooth.device.action.FOUND" />
     </intent>
-
-    <!-- Permite abrir links https -->
     <intent>
       <action android:name="android.intent.action.VIEW"/>
       <category android:name="android.intent.category.BROWSABLE"/>
@@ -41,6 +37,7 @@
     android:theme="@style/AppTheme"
     android:supportsRtl="true">
 
+    <!-- Expo Updates (desativado) -->
     <meta-data android:name="expo.modules.updates.ENABLED" android:value="false"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_CHECK_ON_LAUNCH" android:value="ALWAYS"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_LAUNCH_WAIT_MS" android:value="0"/>
@@ -53,12 +50,14 @@
       android:theme="@style/Theme.App.SplashScreen"
       android:exported="true"
       android:screenOrientation="portrait">
-      
+
+      <!-- App launcher -->
       <intent-filter>
         <action android:name="android.intent.action.MAIN"/>
         <category android:name="android.intent.category.LAUNCHER"/>
       </intent-filter>
 
+      <!-- Deep linking -->
       <intent-filter>
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>

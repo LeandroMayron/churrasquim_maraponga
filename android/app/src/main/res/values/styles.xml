@@ -1,12 +1,24 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
+
+  <!-- Tema principal do app -->
   <style name="AppTheme" parent="Theme.EdgeToEdge">
+    <!-- Customizações específicas -->
     <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
     <item name="colorPrimary">@color/colorPrimary</item>
+    <!-- Status bar preta -->
     <item name="android:statusBarColor">#000</item>
+    <!-- Desativa dark mode automático -->
+    <item name="android:forceDarkAllowed">false</item>
   </style>
+
+  <!-- Splash screen (Android 12+) -->
   <style name="Theme.App.SplashScreen" parent="Theme.SplashScreen">
+    <!-- Cor de fundo da splash -->
     <item name="windowSplashScreenBackground">@color/splashscreen_background</item>
+    <!-- Ícone/Logo da splash -->
     <item name="windowSplashScreenAnimatedIcon">@drawable/splashscreen_logo</item>
+    <!-- Tema aplicado após a splash -->
     <item name="postSplashScreenTheme">@style/AppTheme</item>
   </style>
+
 </resources>

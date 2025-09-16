@@ -3,43 +3,12 @@
     "name": "churrasquim_maraponga",
     "slug": "churrasquim_maraponga",
     "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/images/logo.png",
-    "scheme": "churrasquimmaraponga",
-    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/images/logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#000000"
-    },
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo.png",
-        "backgroundColor": "#000000"
-      },
-      "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.churrasquim_maraponga",
-      "permissions": [
-        "BLUETOOTH",
-        "BLUETOOTH_ADMIN",
-        "ACCESS_FINE_LOCATION",
-        "BLUETOOTH_CONNECT",
-        "BLUETOOTH_SCAN",
-        "INTERNET"
-      ]
-    },
     "web": {
       "bundler": "metro",
       "output": "static",
       "favicon": "./assets/images/logo.png"
     },
-    "plugins": [
-      "expo-router"
-    ],
     "experiments": {
       "typedRoutes": true
     },
