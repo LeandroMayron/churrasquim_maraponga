@@ -263,108 +263,6 @@ export default function Mesa() {
     }
   };
 
-  const imprimirReciboBluetooth = async () => {
-    try {
-      const isEnabled = await BluetoothManager.isBluetoothEnabled();
-      if (!isEnabled) {
-        alert("Bluetooth está desligado. Ative para imprimir.");
-        return;
-      }
-
-      const paired = await BluetoothManager.enableBluetooth();
-      const firstPrinter = paired?.[0];
-
-      if (!firstPrinter) {
-        alert("Nenhuma impressora Bluetooth pareada encontrada.");
-        return;
-      }
-
-      await BluetoothManager.connect(firstPrinter.address);
-
-      // Nome da empresa - centralizado, negrito, tamanho grande
-      await BluetoothEscposPrinter.printText("CHURRASQUINHO MARAPONGA\n", {
-        encoding: "GBK",
-        codepage: 0,
-        widthtimes: 3,
-        heigthtimes: 3,
-        fonttype: 1,
-        align: BluetoothEscposPrinter.ALIGN.CENTER,
-      });
-
-      // CNPJ e endereço - centralizado, tamanho normal
-      await BluetoothEscposPrinter.printText("CNPJ: 12.345.678/0001-99\n", {
-        align: BluetoothEscposPrinter.ALIGN.CENTER,
-      });
-      await BluetoothEscposPrinter.printText(
-        "Rua do Churrasco, 123 - Fortaleza\n\n",
-        {
-          align: BluetoothEscposPrinter.ALIGN.CENTER,
-        }
-      );
-
-      // Data e hora - alinhado à esquerda
-      const agora = new Date();
-      await BluetoothEscposPrinter.printText(
-        `Data/Hora: ${agora.toLocaleString()}\n`,
-        {
-          align: BluetoothEscposPrinter.ALIGN.LEFT,
-        }
-      );
-
-      await BluetoothEscposPrinter.printText(
-        "--------------------------------\n",
-        {}
-      );
-
-      // Itens do pedido - alinhado à esquerda
-      for (const item of pedidoEnviado) {
-        const linha = `${item.quantity}x ${item.name} - R$ ${(
-          item.quantity * item.price
-        ).toFixed(2)}\n`;
-        await BluetoothEscposPrinter.printText(linha, {
-          align: BluetoothEscposPrinter.ALIGN.LEFT,
-        });
-      }
-
-      await BluetoothEscposPrinter.printText(
-        "--------------------------------\n",
-        {}
-      );
-
-      // Total - negrito, tamanho maior, alinhado à esquerda
-      await BluetoothEscposPrinter.printText(
-        `Total: R$ ${calcularTotal().toFixed(2)}\n`,
-        {
-          widthtimes: 2,
-          heigthtimes: 2,
-          fonttype: 1,
-          align: BluetoothEscposPrinter.ALIGN.LEFT,
-        }
-      );
-
-      // Forma de pagamento - alinhado à esquerda
-      await BluetoothEscposPrinter.printText(
-        `Pagamento: ${formaPagamento?.toUpperCase()}\n\n`,
-        {
-          align: BluetoothEscposPrinter.ALIGN.LEFT,
-        }
-      );
-
-      // Mensagem de agradecimento - centralizado
-      await BluetoothEscposPrinter.printText(
-        "Obrigado pela preferência!\n\n\n",
-        {
-          align: BluetoothEscposPrinter.ALIGN.CENTER,
-        }
-      );
-
-      // Alimentar papel
-      await BluetoothEscposPrinter.printText("\n\n\n", {});
-    } catch (error) {
-      console.error("Erro ao imprimir:", error);
-      alert("Erro ao imprimir recibo.");
-    }
-  };
 
 const printCupom = async () => {
   const permissaoOk = await solicitarPermissoesBluetooth(); // <- VERIFICA PERMISSÕES
@@ -478,7 +376,7 @@ const printCupom = async () => {
                             : Colors.acafrao,
                       },
                     ]}
-                    onPress={() => setFormaPagamento("cartão")}
+                    onPress={() => setFormaPagamento("cartao")}
                   >
                     <Text style={styles.closeButtonText}>Cartão</Text>
                   </TouchableOpacity>
@@ -571,7 +469,7 @@ const printCupom = async () => {
           </View>
         </View>
       </Modal>
-      
+
       <Modal
         visible={modalImpressaoVisivel}
         animationType="fade"
@@ -580,13 +478,29 @@ const printCupom = async () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.confirmModalContent}>
-            {/* ... (conteúdo existente) ... */}
+            <Text
+              style={{ fontSize: 20, fontWeight: "bold", marginBottom: 12 }}
+            >
+              Recibo da Mesa {id}
+            </Text>
+
+            <ScrollView style={{ maxHeight: 200, marginBottom: 12 }}>
+              {dadosParaImpressao.map((item, index) => (
+                <Text key={index} style={{ fontSize: 16 }}>
+                  {item.quantity}x {item.name} — R${" "}
+                  {(item.quantity * item.price).toFixed(2)}
+                </Text>
+              ))}
+            </ScrollView>
+
+            <Text
+              style={{ fontSize: 18, fontWeight: "bold", marginBottom: 20 }}
+            >
+              Total: R$ {calcularTotal(dadosParaImpressao).toFixed(2)}
+            </Text>
 
             <TouchableOpacity
-              style={[
-                styles.closeButton,
-                { backgroundColor: Colors.acafrao, marginTop: 20 },
-              ]}
+              style={[styles.closeButton, { backgroundColor: Colors.acafrao }]}
               onPress={printCupom}
             >
               <Text style={styles.closeButtonText}>Imprimir Recibo</Text>
@@ -606,6 +520,7 @@ const printCupom = async () => {
           </View>
         </View>
       </Modal>
+
       {/* Modal de Itens */}
       <Modal
         visible={modalVisible}

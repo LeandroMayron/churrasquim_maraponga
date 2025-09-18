@@ -1,4 +1,4 @@
-package com.anonymous.churrasquim_maraponga
+package com.leandro_mayron.churrasquim_maraponga
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

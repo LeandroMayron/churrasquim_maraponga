@@ -1,4 +1,4 @@
-package com.anonymous.churrasquim_maraponga
+package com.leandro_mayron.churrasquim_maraponga
 
 import android.app.Application
 import android.content.res.Configuration
