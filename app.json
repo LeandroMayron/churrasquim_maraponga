@@ -3,37 +3,27 @@
     "name": "churrasquim_maraponga",
     "slug": "churrasquim_maraponga",
     "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/images/logo.png",
-    "scheme": "churrasquimmaraponga",
-    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/images/logoSemFundo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#000"
-    },
-    "ios": {
-      "supportsTablet": true
-    },
+
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo.png",
-        "backgroundColor": "#000"
-      },
-      "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.churrasquim_maraponga"
+      "package": "com.leandro_mayron.churrasquim_maraponga",
+      "permissions": [
+        "INTERNET",
+        "VIBRATE",
+        "SYSTEM_ALERT_WINDOW",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/logo.png"
-    },
+
     "plugins": [
-      "expo-router"
+      "./plugins/withBluetoothPermissions.js"
     ],
-    "experiments": {
-      "typedRoutes": true
+
+    "extra": {
+      "eas": {
+        "projectId": "365547c8-bdd4-4f4f-9bde-7ef531061c2a"
+      }
     }
   }
 }

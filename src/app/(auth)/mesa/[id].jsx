@@ -9,8 +9,43 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Pressable,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../../../lib/supabase";
+import { BLEPrinter } from "@xyzsola/react-native-thermal-printer";
+import { PermissionsAndroid, Platform } from "react-native";
+
+async function solicitarPermissoesBluetooth() {
+  if (Platform.OS === "android") {
+    const permissoes = [];
+
+    if (Platform.Version >= 31) {
+      permissoes.push(
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN
+      );
+    } else {
+      // Android 10/11 (API 29/30)
+      permissoes.push(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
+    }
+
+    const granted = await PermissionsAndroid.requestMultiple(permissoes);
+
+    const todasOk = Object.values(granted).every(
+      (status) => status === PermissionsAndroid.RESULTS.GRANTED
+    );
+
+    if (!todasOk) {
+      alert("Permissões de Bluetooth negadas. Não é possível imprimir.");
+      return false;
+    }
+  }
+
+  return true;
+}
 
 export default function Mesa() {
   const { id } = useLocalSearchParams();
@@ -21,6 +56,9 @@ export default function Mesa() {
   const [pedidoEnviado, setPedidoEnviado] = useState([]);
   const [mesaFechada, setMesaFechada] = useState(false);
   const [formaPagamento, setFormaPagamento] = useState(null);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [dadosParaImpressao, setDadosParaImpressao] = useState([]);
+  const [modalImpressaoVisivel, setModalImpressaoVisivel] = useState(false);
 
   // 🔹 Carregar pedidos + realtime
   useEffect(() => {
@@ -122,126 +160,189 @@ export default function Mesa() {
   };
 
   // 🔹 Enviar pedido para Supabase
-// 🔹 Enviar pedido para Supabase (corrigido)
-const enviarPedido = async () => {
-  const novoPedido = [...pedidoEnviado];
+  // 🔹 Enviar pedido para Supabase (corrigido)
+  const enviarPedido = async () => {
+    const novoPedido = [...pedidoEnviado];
 
-  // Adiciona ou atualiza os itens selecionados
-  selectedItems.forEach((novoItem) => {
-    const existente = novoPedido.find((p) => p.name === novoItem.name);
-    if (existente) {
-      existente.quantity += novoItem.quantity;
-    } else {
-      novoPedido.push({ ...novoItem });
-    }
-  });
+    // Adiciona ou atualiza os itens selecionados
+    selectedItems.forEach((novoItem) => {
+      const existente = novoPedido.find((p) => p.name === novoItem.name);
+      if (existente) {
+        existente.quantity += novoItem.quantity;
+      } else {
+        novoPedido.push({ ...novoItem });
+      }
+    });
 
-  if (novoPedido.length === 0) {
-    alert("Selecione pelo menos um item para enviar!");
-    return;
-  }
-
-  setPedidoEnviado(novoPedido);
-  setSelectedItems([]);
-  setModalVisible(false);
-
-  try {
-    // 🔍 Verifica se já existe um pedido ABERTO para essa mesa
-    const { data: pedidosExistentes, error: fetchError } = await supabase
-      .from("pedidos")
-      .select("id")
-      .eq("mesa_id", id)
-      .eq("status", "aberto")
-      .limit(1)
-      .maybeSingle();
-
-    // Cria objeto do pedido para enviar
-    const pedidoParaEnviar = {
-      mesa_id: id,
-      itens: novoPedido,
-      status: "aberto",
-      total: calcularTotal(novoPedido),
-    };
-
-    // Se já existe um pedido aberto, adiciona o ID para atualizar
-    if (pedidosExistentes) {
-      pedidoParaEnviar.id = pedidosExistentes.id;
-    }
-
-    // Envia o pedido (upsert com id se existir)
-    const { error: upsertError } = await supabase
-      .from("pedidos")
-      .upsert(pedidoParaEnviar);
-
-    if (!upsertError) {
-      setMesaFechada(false);
-    } else {
-      console.error("Erro ao salvar pedido:", upsertError);
-      alert("Erro ao enviar o pedido. Tente novamente.");
-    }
-  } catch (err) {
-    console.error("Erro inesperado ao enviar pedido:", err);
-    alert("Erro inesperado. Tente novamente.");
-  }
-};
-
-
-  // 🔹 Fechar mesa
-const fecharMesa = async () => {
-  if (!formaPagamento) {
-    alert("Selecione uma forma de pagamento!");
-    return;
-  }
-
-  try {
-    // 🔍 Buscar o pedido aberto
-    const { data: pedidoAberto, error: fetchError } = await supabase
-      .from("pedidos")
-      .select("id")
-      .eq("mesa_id", id)
-      .eq("status", "aberto")
-      .limit(1)
-      .maybeSingle();
-
-    if (fetchError || !pedidoAberto) {
-      alert("Nenhum pedido aberto encontrado para esta mesa.");
+    if (novoPedido.length === 0) {
+      alert("Selecione pelo menos um item para enviar!");
       return;
     }
 
-    // 🔁 Atualizar pedido existente (fechando)
-    const { error } = await supabase
-      .from("pedidos")
-      .update({
-        status: "fechado",
-        pagamento: formaPagamento,
-      })
-      .eq("id", pedidoAberto.id); // usa o ID diretamente
+    setPedidoEnviado(novoPedido);
+    setSelectedItems([]);
+    setModalVisible(false);
 
-    if (!error) {
-      setMesaFechada(true);
-      setPedidoEnviado([]);
-      alert("Mesa fechada com sucesso!");
-    } else {
-      console.error("Erro ao fechar mesa:", error);
-      alert("Erro ao fechar a mesa. Tente novamente.");
+    try {
+      // 🔍 Verifica se já existe um pedido ABERTO para essa mesa
+      const { data: pedidosExistentes, error: fetchError } = await supabase
+        .from("pedidos")
+        .select("id")
+        .eq("mesa_id", id)
+        .eq("status", "aberto")
+        .limit(1)
+        .maybeSingle();
+
+      // Cria objeto do pedido para enviar
+      const pedidoParaEnviar = {
+        mesa_id: id,
+        itens: novoPedido,
+        status: "aberto",
+        total: calcularTotal(novoPedido),
+      };
+
+      // Se já existe um pedido aberto, adiciona o ID para atualizar
+      if (pedidosExistentes) {
+        pedidoParaEnviar.id = pedidosExistentes.id;
+      }
+
+      // Envia o pedido (upsert com id se existir)
+      const { error: upsertError } = await supabase
+        .from("pedidos")
+        .upsert(pedidoParaEnviar);
+
+      if (!upsertError) {
+        setMesaFechada(false);
+      } else {
+        console.error("Erro ao salvar pedido:", upsertError);
+        alert("Erro ao enviar o pedido. Tente novamente.");
+      }
+    } catch (err) {
+      console.error("Erro inesperado ao enviar pedido:", err);
+      alert("Erro inesperado. Tente novamente.");
     }
+  };
+
+  // 🔹 Fechar mesa
+  const fecharMesa = async () => {
+    if (!formaPagamento) {
+      alert("Selecione a forma de pagamento antes de fechar a mesa.");
+      return;
+    }
+
+    try {
+      console.log("🔒 Tentando fechar a mesa...");
+
+      const { data: pedidoAberto, error: fetchError } = await supabase
+        .from("pedidos")
+        .select("id, itens")
+        .eq("mesa_id", id)
+        .eq("status", "aberto")
+        .limit(1)
+        .maybeSingle();
+
+      if (fetchError || !pedidoAberto) {
+        alert("Nenhum pedido aberto encontrado para esta mesa.");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("pedidos")
+        .update({
+          status: "fechado",
+          pagamento: formaPagamento,
+        })
+        .eq("id", pedidoAberto.id);
+
+      if (!error) {
+        console.log("✅ Mesa fechada com sucesso.");
+
+        setDadosParaImpressao(pedidoAberto.itens);
+        setModalImpressaoVisivel(true); // <-- ABRE O MODAL DE IMPRESSÃO
+        setMesaFechada(true);
+        setPedidoEnviado([]);
+      } else {
+        console.error("Erro ao fechar mesa:", error);
+        alert("Erro ao fechar a mesa. Tente novamente.");
+      }
+    } catch (err) {
+      console.error("Erro inesperado ao fechar a mesa:", err);
+      alert("Erro inesperado. Tente novamente.");
+    }
+  };
+
+const printCupom = async () => {
+  try {
+    console.log("🖨️ Iniciando impressão do recibo...");
+
+    await BLEPrinter.init();
+    console.log("✅ Bluetooth inicializado");
+
+    const devices = await BLEPrinter.getDeviceList();
+    console.log("📋 Dispositivos encontrados:", devices);
+
+    if (!devices.length) {
+      alert("Nenhuma impressora encontrada!");
+      return;
+    }
+
+    // 🔹 Substitua pelo MAC fixo ou deixe dinâmico com devices[0].innerMacAddress
+    const mac = "66:22:8C:3B:CC:2E";
+    await BLEPrinter.connectPrinter(mac);
+    console.log("✅ Conectado na impressora:", mac);
+
+    // 🔹 Montar linhas do pedido
+    const linhas = dadosParaImpressao
+      .map(
+        (item) =>
+          `<Text align='left'>${item.quantity}x ${item.name}|R$ ${(
+            item.quantity * item.price
+          ).toFixed(2)}</Text><NewLine />`
+      )
+      .join("");
+
+    const total = calcularTotal(dadosParaImpressao).toFixed(2);
+
+    // 🔹 Conteúdo do recibo
+    const payload = `
+      <Printout>
+        <Text align='center' bold='1' fontWidth='2' fontHeight='2'>CHURRASQUINHO</Text>
+        <NewLine />
+        <Text align='center' bold='1' fontWidth='2' fontHeight='2'>MARAPONGA</Text>
+        <NewLine />
+        <Line lineChar='-' />
+        <Text align='left'>Mesa ${id}</Text>
+        <NewLine />
+        ${linhas}
+        <Line lineChar='-' />
+        <Text align='right' bold='1'>TOTAL: R$ ${total}</Text>
+        <NewLine />
+        <Text align='center'>Obrigado pela preferencia!</Text>
+        <NewLine />
+        <NewLine />
+      </Printout>
+    `;
+
+    await BLEPrinter.print(payload);
+
+    console.log("🟢 Recibo enviado para impressão!");
   } catch (err) {
-    console.error("Erro inesperado ao fechar a mesa:", err);
-    alert("Erro inesperado. Tente novamente.");
+    console.error("❌ Erro ao imprimir recibo:", err);
+    alert("Falha ao imprimir: " + err.message);
   }
 };
 
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Mesa {id}</Text>
 
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <Text style={styles.title}>Mesa {id}</Text>
       {!mesaFechada && (
         <TouchableOpacity style={styles.button} onPress={abrirModal}>
           <Text style={styles.buttonText}>Fazer Pedido</Text>
         </TouchableOpacity>
       )}
-
       {/* Lista de pedidos enviados */}
       <View style={styles.pedidoContainer}>
         <Text style={styles.pedidoTitulo}>Pedidos Feitos</Text>
@@ -272,19 +373,43 @@ const fecharMesa = async () => {
                 </Text>
                 <View style={{ flexDirection: "row", gap: 10 }}>
                   <TouchableOpacity
-                    style={styles.closeButton}
+                    style={[
+                      styles.closeButton,
+                      {
+                        backgroundColor:
+                          formaPagamento === "dinheiro"
+                            ? Colors.gold
+                            : Colors.acafrao,
+                      },
+                    ]}
                     onPress={() => setFormaPagamento("dinheiro")}
                   >
                     <Text style={styles.closeButtonText}>Dinheiro</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.closeButton}
-                    onPress={() => setFormaPagamento("cartão")}
+                    style={[
+                      styles.closeButton,
+                      {
+                        backgroundColor:
+                          formaPagamento === "cartao"
+                            ? Colors.gold
+                            : Colors.acafrao,
+                      },
+                    ]}
+                    onPress={() => setFormaPagamento("cartao")}
                   >
                     <Text style={styles.closeButtonText}>Cartão</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.closeButton}
+                    style={[
+                      styles.closeButton,
+                      {
+                        backgroundColor:
+                          formaPagamento === "pix"
+                            ? Colors.gold
+                            : Colors.acafrao,
+                      },
+                    ]}
                     onPress={() => setFormaPagamento("pix")}
                   >
                     <Text style={styles.closeButtonText}>PIX</Text>
@@ -296,7 +421,15 @@ const fecharMesa = async () => {
                     styles.closeButton,
                     { backgroundColor: Colors.gold, marginTop: 12 },
                   ]}
-                  onPress={fecharMesa}
+                  onPress={() => {
+                    if (!formaPagamento) {
+                      alert(
+                        "Selecione a forma de pagamento antes de fechar a mesa."
+                      );
+                    } else {
+                      setConfirmModalVisible(true);
+                    }
+                  }}
                 >
                   <Text
                     style={[styles.closeButtonText, { color: Colors.black }]}
@@ -308,7 +441,108 @@ const fecharMesa = async () => {
             )}
           </>
         )}
+        <Pressable style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color={Colors.gold}
+            style={{ alignSelf: "center", marginTop: 8 }}
+          />
+        </Pressable>
       </View>
+      {/* Modal de confirmação para fechar a mesa */}
+      <Modal
+        visible={confirmModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setConfirmModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmModalContent}>
+            <Text
+              style={{ fontSize: 18, fontWeight: "bold", marginBottom: 12 }}
+            >
+              Deseja realmente fechar a mesa?
+            </Text>
+            <Text style={{ marginBottom: 20 }}>
+              Isso encerrará os pedidos e enviará o cupom para impressão.
+            </Text>
+            <TouchableOpacity
+              style={[styles.closeButton, { backgroundColor: Colors.gold }]}
+              onPress={async () => {
+                console.log("🟡 Confirmar Fechamento pressionado");
+                setConfirmModalVisible(false);
+                await fecharMesa();
+              }}
+            >
+              <Text style={[styles.closeButtonText, { color: Colors.black }]}>
+                Confirmar Fechamento
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.closeButton, { marginTop: 10 }]}
+              onPress={() => setConfirmModalVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={modalImpressaoVisivel}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setModalImpressaoVisivel(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmModalContent}>
+            <Text
+              style={{ fontSize: 20, fontWeight: "bold", marginBottom: 12 }}
+            >
+              Recibo da Mesa {id}
+            </Text>
+
+            <ScrollView style={{ maxHeight: 200, marginBottom: 12 }}>
+              {dadosParaImpressao.map((item, index) => (
+                <Text key={index} style={{ fontSize: 16 }}>
+                  {item.quantity}x {item.name} — R${" "}
+                  {(item.quantity * item.price).toFixed(2)}
+                </Text>
+              ))}
+            </ScrollView>
+
+            <Text
+              style={{ fontSize: 18, fontWeight: "bold", marginBottom: 20 }}
+            >
+              Total: R$ {calcularTotal(dadosParaImpressao).toFixed(2)}
+            </Text>
+
+            <TouchableOpacity
+              style={[
+                styles.closeButton,
+                { backgroundColor: Colors.gold, marginTop: 10 },
+              ]}
+              onPress={printCupom}
+            >
+              <Text style={styles.closeButtonText}>Impressão</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.closeButton,
+                { backgroundColor: Colors.gold, marginTop: 10 },
+              ]}
+              onPress={() => setModalImpressaoVisivel(false)}
+            >
+              <Text style={[styles.closeButtonText, { color: Colors.black }]}>
+                Fechar
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Modal de Itens */}
       <Modal
@@ -382,7 +616,7 @@ const fecharMesa = async () => {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -431,6 +665,17 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     marginTop: 4,
+  },
+  backButton: {
+    position: "absolute",
+    width: 40,
+    height: 40,
+    top: 0,
+    left: 0,
+    alignSelf: "center",
+    borderRadius: 8,
+    zIndex: 0,
+    backgroundColor: Colors.acafrao,
   },
   modalOverlay: {
     flex: 1,
@@ -490,4 +735,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   closeButtonText: { color: Colors.white, fontWeight: "bold", fontSize: 16 },
+  confirmModalContent: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: 20,
+    width: "80%",
+    alignItems: "center",
+  },
 });

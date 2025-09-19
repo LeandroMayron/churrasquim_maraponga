@@ -11,6 +11,7 @@ import {
   View,
   Dimensions,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { MotiView } from "moti";
 import { useRouter } from "expo-router";
 import { supabase } from "../../../lib/supabase"; // ajuste se necessário
@@ -21,10 +22,6 @@ const ITEM_MARGIN = 12;
 const ITEM_WIDTH =
   (SCREEN_WIDTH - ITEM_MARGIN * (NUM_COLUMNS + 1)) / NUM_COLUMNS;
 
-type Mesa = {
-  id: number;
-  status: "livre" | "aberto";
-};
 
 const Salao = () => {
   const [mesas, setMesas] = useState([]);
@@ -37,7 +34,7 @@ const Salao = () => {
       .select("mesa_id, status");
 
     if (!error && data) {
-      const totalMesas = mesas.length > 0 ? mesas.length : 10;
+      const totalMesas = mesas.length > 0 ? mesas.length : 20;
       const mesasAtualizadas = Array.from({ length: totalMesas }, (_, i) => {
         const mesaId = i + 1;
         const pedidoAberto = data.find(
@@ -78,12 +75,12 @@ const Salao = () => {
     setMesas((prev) => [...prev, { id: prev.length + 1, status: "livre" }]);
   };
 
-  const handleMesaPress = (mesaId: number) => {
+  const handleMesaPress = (mesaId) => {
     router.push(`/mesa/${mesaId}`);
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <FlatList
         data={mesas}
         keyExtractor={(item) => item.id.toString()}
@@ -126,7 +123,7 @@ const Salao = () => {
       <TouchableOpacity style={styles.fab} onPress={adicionarMesa}>
         <AntDesign name="plus" size={32} color={Colors.white} />
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 };
 
