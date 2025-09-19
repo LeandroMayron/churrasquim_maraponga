@@ -1,4 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet, Pressable } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../../../lib/supabase"; // ajuste o caminho se necessário
 import Colors from "@/constants/Colors";
 import { router } from "expo-router";
@@ -19,7 +20,7 @@ export default function Logout() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Deseja sair da conta?</Text>
       <Pressable style={styles.backButton} onPress={() => router.back()}>
         <Ionicons
@@ -32,7 +33,7 @@ export default function Logout() {
       <TouchableOpacity style={styles.button} onPress={handleLogout}>
         <Text style={styles.buttonText}>Sair</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }
 

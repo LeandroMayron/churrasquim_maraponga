@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Pressable,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../../../lib/supabase";
@@ -18,17 +19,26 @@ import { BLEPrinter } from "@xyzsola/react-native-thermal-printer";
 import { PermissionsAndroid, Platform } from "react-native";
 
 async function solicitarPermissoesBluetooth() {
-  if (Platform.OS === "android" && Platform.Version >= 31) {
-    const granted = await PermissionsAndroid.requestMultiple([
-      PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-      PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-    ]);
+  if (Platform.OS === "android") {
+    const permissoes = [];
 
-    const conectou =
-      granted["android.permission.BLUETOOTH_CONNECT"] === "granted";
-    const escaneou = granted["android.permission.BLUETOOTH_SCAN"] === "granted";
+    if (Platform.Version >= 31) {
+      permissoes.push(
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN
+      );
+    } else {
+      // Android 10/11 (API 29/30)
+      permissoes.push(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
+    }
 
-    if (!conectou || !escaneou) {
+    const granted = await PermissionsAndroid.requestMultiple(permissoes);
+
+    const todasOk = Object.values(granted).every(
+      (status) => status === PermissionsAndroid.RESULTS.GRANTED
+    );
+
+    if (!todasOk) {
       alert("Permissões de Bluetooth negadas. Não é possível imprimir.");
       return false;
     }
@@ -36,8 +46,6 @@ async function solicitarPermissoesBluetooth() {
 
   return true;
 }
-
-
 
 export default function Mesa() {
   const { id } = useLocalSearchParams();
@@ -263,60 +271,72 @@ export default function Mesa() {
     }
   };
 
-
 const printCupom = async () => {
-  const permissaoOk = await solicitarPermissoesBluetooth(); // <- VERIFICA PERMISSÕES
-  if (!permissaoOk) return;
-
   try {
+    console.log("🖨️ Iniciando impressão do recibo...");
+
     await BLEPrinter.init();
+    console.log("✅ Bluetooth inicializado");
+
     const devices = await BLEPrinter.getDeviceList();
+    console.log("📋 Dispositivos encontrados:", devices);
+
     if (!devices.length) {
-      alert("Nenhuma impressora Bluetooth encontrada!");
+      alert("Nenhuma impressora encontrada!");
       return;
     }
-    await BLEPrinter.connectPrinter(devices[0].innerMacAddress);
 
+    // 🔹 Substitua pelo MAC fixo ou deixe dinâmico com devices[0].innerMacAddress
+    const mac = "66:22:8C:3B:CC:2E";
+    await BLEPrinter.connectPrinter(mac);
+    console.log("✅ Conectado na impressora:", mac);
+
+    // 🔹 Montar linhas do pedido
     const linhas = dadosParaImpressao
       .map(
         (item) =>
-          `${item.quantity}x ${item.name} — R$ ${(
+          `<Text align='left'>${item.quantity}x ${item.name}|R$ ${(
             item.quantity * item.price
-          ).toFixed(2)}`
+          ).toFixed(2)}</Text><NewLine />`
       )
-      .join("\n");
+      .join("");
 
     const total = calcularTotal(dadosParaImpressao).toFixed(2);
 
+    // 🔹 Conteúdo do recibo
     const payload = `
-      <Text align="center" bold="1" fontWidth="2" fontHeight="2">CHURRASQUINHO MARAPONGA</Text>
-      <NewLine /><Line lineChar="-" />
-      <Text align="left">Mesa ${id}</Text><NewLine />
-      ${linhas}
-      <Line lineChar="-" />
-      <Text align="right" bold="1">Total: R$ ${total}</Text>
-      <NewLine />
-      <Text align="left">Pagamento: ${formaPagamento?.toUpperCase()}</Text>
-      <NewLine />
-      <Text align="center">Obrigado pela preferência!</Text>
-      <NewLine /><NewLine />
+      <Printout>
+        <Text align='center' bold='1' fontWidth='2' fontHeight='2'>CHURRASQUINHO</Text>
+        <NewLine />
+        <Text align='center' bold='1' fontWidth='2' fontHeight='2'>MARAPONGA</Text>
+        <NewLine />
+        <Line lineChar='-' />
+        <Text align='left'>Mesa ${id}</Text>
+        <NewLine />
+        ${linhas}
+        <Line lineChar='-' />
+        <Text align='right' bold='1'>TOTAL: R$ ${total}</Text>
+        <NewLine />
+        <Text align='center'>Obrigado pela preferencia!</Text>
+        <NewLine />
+        <NewLine />
+      </Printout>
     `;
 
-    await BLEPrinter.print(payload, {
-      beep: true,
-      cut: true,
-      tailingLine: true,
-    });
+    await BLEPrinter.print(payload);
+
+    console.log("🟢 Recibo enviado para impressão!");
   } catch (err) {
-    console.error("Erro ao imprimir:", err);
-    alert("Falha ao imprimir no Bluetooth.");
+    console.error("❌ Erro ao imprimir recibo:", err);
+    alert("Falha ao imprimir: " + err.message);
   }
 };
 
 
 
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Mesa {id}</Text>
       {!mesaFechada && (
         <TouchableOpacity style={styles.button} onPress={abrirModal}>
@@ -500,10 +520,13 @@ const printCupom = async () => {
             </Text>
 
             <TouchableOpacity
-              style={[styles.closeButton, { backgroundColor: Colors.acafrao }]}
+              style={[
+                styles.closeButton,
+                { backgroundColor: Colors.gold, marginTop: 10 },
+              ]}
               onPress={printCupom}
             >
-              <Text style={styles.closeButtonText}>Imprimir Recibo</Text>
+              <Text style={styles.closeButtonText}>Impressão</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -593,7 +616,7 @@ const printCupom = async () => {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 

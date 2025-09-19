@@ -11,6 +11,7 @@ import {
   View,
   Dimensions,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { MotiView } from "moti";
 import { useRouter } from "expo-router";
 import { supabase } from "../../../lib/supabase"; // ajuste se necessário
@@ -74,12 +75,12 @@ const Salao = () => {
     setMesas((prev) => [...prev, { id: prev.length + 1, status: "livre" }]);
   };
 
-  const handleMesaPress = (mesaId: number) => {
+  const handleMesaPress = (mesaId) => {
     router.push(`/mesa/${mesaId}`);
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <FlatList
         data={mesas}
         keyExtractor={(item) => item.id.toString()}
@@ -122,7 +123,7 @@ const Salao = () => {
       <TouchableOpacity style={styles.fab} onPress={adicionarMesa}>
         <AntDesign name="plus" size={32} color={Colors.white} />
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 };
 

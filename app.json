@@ -7,33 +7,20 @@
 
     "android": {
       "package": "com.leandro_mayron.churrasquim_maraponga",
-
       "permissions": [
         "INTERNET",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "SYSTEM_ALERT_WINDOW",
         "VIBRATE",
-        "ACCESS_FINE_LOCATION",
-        "BLUETOOTH",
-        "BLUETOOTH_ADMIN",
-        "BLUETOOTH_CONNECT",
-        "BLUETOOTH_SCAN"
+        "SYSTEM_ALERT_WINDOW",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
       ]
     },
 
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/logo.png"
-    },
-
-    "experiments": {
-      "typedRoutes": true
-    },
+    "plugins": [
+      "./plugins/withBluetoothPermissions.js"
+    ],
 
     "extra": {
-      "router": {},
       "eas": {
         "projectId": "365547c8-bdd4-4f4f-9bde-7ef531061c2a"
       }
