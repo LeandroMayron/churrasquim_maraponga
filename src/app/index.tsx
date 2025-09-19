@@ -1,5 +1,4 @@
 import Colors from "@/constants/Colors";
-import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
   Text,
@@ -17,6 +16,7 @@ import { useState, useEffect } from "react";
 import { router } from "expo-router";
 import { supabase } from "../lib/supabase";
 import { MotiView } from "moti";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Login() {
   const [email, setEmail] = useState("");
