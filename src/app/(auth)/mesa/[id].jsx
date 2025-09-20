@@ -286,7 +286,7 @@ const printCupom = async () => {
       return;
     }
 
-    // 🔹 Substitua pelo MAC fixo ou deixe dinâmico com devices[0].innerMacAddress
+    // 🔹 Usa sempre o MAC salvo ou o fixo
     const mac = "66:22:8C:3B:CC:2E";
     await BLEPrinter.connectPrinter(mac);
     console.log("✅ Conectado na impressora:", mac);
@@ -295,7 +295,7 @@ const printCupom = async () => {
     const linhas = dadosParaImpressao
       .map(
         (item) =>
-          `<Text align='left'>${item.quantity}x ${item.name}|R$ ${(
+          `<Text align='left'>${item.quantity}x ${item.name} | R$ ${(
             item.quantity * item.price
           ).toFixed(2)}</Text><NewLine />`
       )
@@ -317,20 +317,28 @@ const printCupom = async () => {
         <Line lineChar='-' />
         <Text align='right' bold='1'>TOTAL: R$ ${total}</Text>
         <NewLine />
-        <Text align='center'>Obrigado pela preferencia!</Text>
-        <NewLine />
-        <NewLine />
+        <Text align='center'>Obrigado pela preferência!</Text>
+        <NewLine /><NewLine />
       </Printout>
     `;
 
     await BLEPrinter.print(payload);
-
     console.log("🟢 Recibo enviado para impressão!");
+
   } catch (err) {
     console.error("❌ Erro ao imprimir recibo:", err);
     alert("Falha ao imprimir: " + err.message);
+  } finally {
+    // 🔹 SEMPRE desconectar após imprimir
+    try {
+      await BLEPrinter.disconnectPrinter();
+      console.log("🔌 Impressora desconectada (liberada para outro celular).");
+    } catch (e) {
+      console.warn("Não foi possível desconectar:", e);
+    }
   }
 };
+
 
 
 
