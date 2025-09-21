@@ -1,22 +1,23 @@
 import Colors from "@/constants/Colors";
-import { useLocalSearchParams } from "expo-router";
-import React, { useState, useEffect } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { BLEPrinter } from "@xyzsola/react-native-thermal-printer";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Modal,
+  PermissionsAndroid,
+  Platform,
+  Pressable,
+  ScrollView,
   StyleSheet,
   Text,
-  View,
-  Modal,
-  ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
-  Pressable,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../../../lib/supabase";
-import { BLEPrinter } from "@xyzsola/react-native-thermal-printer";
-import { PermissionsAndroid, Platform } from "react-native";
 
 async function solicitarPermissoesBluetooth() {
   if (Platform.OS === "android") {
@@ -59,6 +60,31 @@ export default function Mesa() {
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [dadosParaImpressao, setDadosParaImpressao] = useState([]);
   const [modalImpressaoVisivel, setModalImpressaoVisivel] = useState(false);
+
+  const selecionarImpressora = async () => {    
+    try {
+      await solicitarPermissoesBluetooth();
+      await BLEPrinter.init();
+      const devices = await BLEPrinter.getDeviceList();
+  
+      if (!devices.length) {
+        alert("Nenhuma impressora encontrada!");
+        return;
+      }
+  
+      // Exemplo: sempre pega a primeira, mas você pode abrir um modal com devices.map(...)
+      const escolhida = devices[0];
+  
+      await AsyncStorage.setItem("printer_mac", escolhida.innerMacAddress);
+      alert(`✅ Impressora ${escolhida.deviceName} salva!`);
+  
+    } catch (err) {
+      console.error("Erro ao selecionar impressora:", err);
+      alert("Erro ao selecionar impressora: " + err.message);
+    }
+  };
+
+  const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
   // 🔹 Carregar pedidos + realtime
   useEffect(() => {
@@ -271,69 +297,71 @@ export default function Mesa() {
     }
   };
 
-const printCupom = async () => {
-  try {
-    console.log("🖨️ Iniciando impressão do recibo...");
+  const printCupom = async () => {
+    let printerConnection = null;
+    try {
+      console.log("🖨️ Iniciando impressão do recibo...");
 
-    await BLEPrinter.init();
-    console.log("✅ Bluetooth inicializado");
+      await BLEPrinter.init();
 
-    const devices = await BLEPrinter.getDeviceList();
-    console.log("📋 Dispositivos encontrados:", devices);
+      const mac = await AsyncStorage.getItem("printer_mac");
+      if (!mac) {
+        alert("Nenhuma impressora configurada! Configure antes de imprimir.");
+        return;
+      }
 
-    if (!devices.length) {
-      alert("Nenhuma impressora encontrada!");
-      return;
+      // Conecta à impressora
+      printerConnection = await BLEPrinter.connectPrinter(mac);
+      if (!printerConnection) {
+        throw new Error("Não foi possível conectar à impressora.");
+      }
+      console.log("✅ Conectado na impressora:", mac);
+
+      // Monta as linhas do pedido
+      const linhas = dadosParaImpressao
+        .map(
+          (item) =>
+            `<Text align='left'>${item.quantity}x ${item.name}|R$ ${(
+              item.quantity * item.price
+            ).toFixed(2)}</Text><NewLine />`
+        )
+        .join("");
+
+      const total = calcularTotal(dadosParaImpressao).toFixed(2);
+
+      const payload = `
+        <Printout>
+          <Text align='center' bold='1' fontWidth='2' fontHeight='2'>CHURRASQUINHO</Text>
+          <NewLine />
+          <Text align='center' bold='1' fontWidth='2' fontHeight='2'>MARAPONGA</Text>
+          <NewLine />
+          <Line lineChar='-' />
+          <Text align='left'>Mesa ${id}</Text>
+          <NewLine />
+          ${linhas}
+          <Line lineChar='-' />
+          <Text align='right' bold='1'>TOTAL: R$ ${total}</Text>
+          <NewLine />
+          <Text align='center'>Obrigado pela preferencia!</Text>
+          <NewLine /><NewLine />
+        </Printout>
+      `;
+
+      await BLEPrinter.print(payload);
+
+      console.log("🟢 Recibo enviado para impressão!");
+    } catch (err) {
+      console.error("❌ Erro ao imprimir recibo:", err);
+      alert("Falha ao imprimir: " + err.message);
+    } finally {
+      if (printerConnection) {
+        await delay(500); // Pequena pausa para garantir que a impressão foi enviada
+        BLEPrinter.closeConn()
+          .then(() => console.log("🔌 Impressora desconectada."))
+          .catch((e) => console.error("Erro ao desconectar:", e));
+      }
     }
-
-    // 🔹 Substitua pelo MAC fixo ou deixe dinâmico com devices[0].innerMacAddress
-    const mac = "66:22:8C:3B:CC:2E";
-    await BLEPrinter.connectPrinter(mac);
-    console.log("✅ Conectado na impressora:", mac);
-
-    // 🔹 Montar linhas do pedido
-    const linhas = dadosParaImpressao
-      .map(
-        (item) =>
-          `<Text align='left'>${item.quantity}x ${item.name}|R$ ${(
-            item.quantity * item.price
-          ).toFixed(2)}</Text><NewLine />`
-      )
-      .join("");
-
-    const total = calcularTotal(dadosParaImpressao).toFixed(2);
-
-    // 🔹 Conteúdo do recibo
-    const payload = `
-      <Printout>
-        <Text align='center' bold='1' fontWidth='2' fontHeight='2'>CHURRASQUINHO</Text>
-        <NewLine />
-        <Text align='center' bold='1' fontWidth='2' fontHeight='2'>MARAPONGA</Text>
-        <NewLine />
-        <Line lineChar='-' />
-        <Text align='left'>Mesa ${id}</Text>
-        <NewLine />
-        ${linhas}
-        <Line lineChar='-' />
-        <Text align='right' bold='1'>TOTAL: R$ ${total}</Text>
-        <NewLine />
-        <Text align='center'>Obrigado pela preferencia!</Text>
-        <NewLine />
-        <NewLine />
-      </Printout>
-    `;
-
-    await BLEPrinter.print(payload);
-
-    console.log("🟢 Recibo enviado para impressão!");
-  } catch (err) {
-    console.error("❌ Erro ao imprimir recibo:", err);
-    alert("Falha ao imprimir: " + err.message);
-  }
-};
-
-
-
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -527,6 +555,16 @@ const printCupom = async () => {
               onPress={printCupom}
             >
               <Text style={styles.closeButtonText}>Impressão</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.closeButton,
+                { backgroundColor: Colors.acafrao, marginTop: 10 },
+              ]}
+              onPress={selecionarImpressora}
+            >
+              <Text style={styles.closeButtonText}>Configurar Impressora</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
