@@ -1,5 +1,6 @@
 import Colors from "@/constants/Colors";
 import { useEffect, useState } from "react";
+import Header from "../../../components/header/index";
 import {
   ActivityIndicator,
   Alert,
@@ -41,6 +42,7 @@ const Cardapio = () => {
 
   return (
     <SafeAreaView>
+      <Header />
       <ScrollView>
         <View style={styles.container}>
           {menu.map((categoria, idx) => (

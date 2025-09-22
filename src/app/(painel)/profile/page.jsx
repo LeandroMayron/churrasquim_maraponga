@@ -1,5 +1,4 @@
 import {Text, StyleSheet, SafeAreaView} from "react-native";
-import { Stack } from "expo-router"
 import Colors from "@/constants/Colors";
 import Header from "../../../components/header/index";
 import Salao from "../../(auth)/salao/page";
