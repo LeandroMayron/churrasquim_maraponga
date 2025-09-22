@@ -249,6 +249,49 @@ export default function Mesa() {
     }
   };
 
+  // 🔹 Remover item do pedido
+  const removerItemDoPedido = async (itemParaRemover) => {
+    const novosItens = pedidoEnviado.filter(
+      (item) => item.name !== itemParaRemover.name
+    );
+
+    try {
+      const { data: pedidoAberto, error: fetchError } = await supabase
+        .from("pedidos")
+        .select("id")
+        .eq("mesa_id", id)
+        .eq("status", "aberto")
+        .limit(1)
+        .maybeSingle();
+
+      if (fetchError || !pedidoAberto) {
+        alert("Não foi possível encontrar o pedido aberto para atualizar.");
+        return;
+      }
+
+      // Se a lista de itens ficar vazia, fecha a mesa. Senão, atualiza.
+      if (novosItens.length === 0) {
+        await supabase
+          .from("pedidos")
+          .update({ status: "fechado", itens: [] })
+          .eq("id", pedidoAberto.id);
+        setPedidoEnviado([]);
+        setMesaFechada(true);
+      } else {
+        await supabase
+          .from("pedidos")
+          .update({ itens: novosItens, total: calcularTotal(novosItens) })
+          .eq("id", pedidoAberto.id);
+        setPedidoEnviado(novosItens);
+      }
+
+      alert(`Item "${itemParaRemover.name}" removido com sucesso!`);
+    } catch (err) {
+      console.error("Erro ao remover item:", err);
+      alert("Erro ao remover o item. Tente novamente.");
+    }
+  };
+
   // 🔹 Fechar mesa
   const fecharMesa = async () => {
     if (!formaPagamento) {
@@ -381,10 +424,20 @@ export default function Mesa() {
         ) : (
           <>
             {pedidoEnviado.map((item, index) => (
-              <Text key={index} style={styles.pedidoItem}>
-                {item.quantity}x {item.name} — R${" "}
-                {(item.quantity * item.price).toFixed(2)}
-              </Text>
+              <View key={index} style={styles.pedidoItemContainer}>
+                <Text style={styles.pedidoItem}>
+                  {item.quantity}x {item.name} — R${" "}
+                  {(item.quantity * item.price).toFixed(2)}
+                </Text>
+                {!mesaFechada && (
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => removerItemDoPedido(item)}
+                  >
+                    <Ionicons name="trash-outline" size={20} color={Colors.gold} />
+                  </TouchableOpacity>
+                )}
+              </View>
             ))}
 
             <View style={styles.totalContainer}>
@@ -687,7 +740,18 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 10,
   },
-  pedidoItem: { color: Colors.white, fontSize: 16, marginVertical: 2 },
+  pedidoItemContainer: {
+    flexDirection: "row",
+    justifyContent: "center", 
+    alignItems: "center",
+
+    paddingHorizontal: 10,
+  },
+  pedidoItem: {
+    color: Colors.white,
+    fontSize: 16,
+    marginVertical: 4,
+  },
   emptyText: { color: Colors.gray, fontStyle: "italic" },
   totalContainer: {
     marginTop: 12,
@@ -771,6 +835,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
     alignItems: "center",
+  },
+  deleteButton: {
+    padding: 5,
+    marginLeft: 10,
   },
   closeButtonText: { color: Colors.white, fontWeight: "bold", fontSize: 16 },
   confirmModalContent: {
