@@ -1,63 +1,49 @@
 Churrasquim_Maraponga
 npx expo start --dev-client
 
-1. Ativar suporte nativo (bare workflow)
+### ⚙️ Configurando o Projeto do Zero
 
-Se ainda não estiver no bare workflow:
+Este guia serve para instalar o projeto em um novo computador, garantindo que as dependências e configurações de build funcionem corretamente.
 
-npx expo prebuild
+1.  **Clone o Repositório:**
+    ```bash
+    git clone <url-do-seu-repositorio>
+    cd churrasquim_maraponga
+    ```
 
-2. Atualizar android/build.gradle
+2.  **Limpeza (Opcional, mas recomendado):**
+    Se você encontrar problemas de dependência, comece com uma limpeza completa.
+    ```bash
+    # Remove dependências e arquivos de lock antigos
+    rm -rf node_modules package-lock.json
 
-Abra android/build.gradle e adicione:
+    # Limpa o cache do npm
+    npm cache clean --force
+    ```
 
-allprojects {
-  repositories {
-    maven { url 'https://www.jitpack.io' }
-    // outros...
-  }
-}
+3.  **Instale as Dependências:**
+    Este comando irá instalar todos os pacotes listados no `package.json`.
+    ```bash
+    npm install
+    ```
 
+4.  **Gere uma Build de Desenvolvimento (APK):**
+    Para testar em um celular Android, você precisa gerar um "Dev Client" que contenha as bibliotecas nativas (como a de impressão Bluetooth).
+    ```bash
+    # Conecte seu celular com a depuração USB ativada e rode:
+    npx expo run:android
+    ```
+    Se preferir usar os serviços da Expo para gerar o APK na nuvem:
+    ```bash
+    eas build -p android --profile development
+    ```
+    Após o build, instale o APK gerado no seu celular.
 
-Verifique também se o kotlinVersion, compileSdkVersion, etc., estão definidos corretamente no bloco ext {}.
-
-Exemplo:
-
-buildscript {
-  ext {
-    buildToolsVersion = "33.0.0"
-    minSdkVersion = 21
-    compileSdkVersion = 33
-    targetSdkVersion = 33
-    kotlinVersion = "1.8.0"
-  }
-  ...
-}
-
-🔌 Instalar Pacote da Impressora
-yarn add react-native-bluetooth-escpos-printer
-# ou
-npm install react-native-bluetooth-escpos-printer
-
-
-Importante: Esse pacote não funciona com Expo Go. Você precisa de um Dev Client.
-
-🧪 Instalar dependências nativas (autolink)
-npx expo run:android
-
-
-Ou, para abrir no seu cliente customizado:
-
-npx expo start --dev-client
-
-🔄 Caso tenha problemas com BluetoothManager null
-
-Certifique-se de que o módulo foi corretamente autolinkado e que o projeto foi reconstruído com:
-
-cd android
-./gradlew clean
-cd ..
-npx expo run:android
+5.  **Inicie o Servidor de Desenvolvimento:**
+    Com o Dev Client instalado no celular, use este comando para rodar o projeto e ver as alterações em tempo real.
+    ```bash
+    npx expo start --dev-client
+    ```
 
 📱 Rodar no Android
 
@@ -75,45 +61,19 @@ npx expo start --dev-client
 
 E abra o app no seu celular via Expo Dev Client.
 
-🔐 Permissões Android
+### 🔐 Permissões Android (Já configurado)
 
-Verifique se seu AndroidManifest.xml possui as permissões necessárias:
-
-<uses-permission android:name="android.permission.BLUETOOTH"/>
-<uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
-<uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
-<uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-
-
-Para Android 12+, BLUETOOTH_CONNECT e BLUETOOTH_SCAN são obrigatórios.
+O código já solicita as permissões de Bluetooth necessárias para Android 10, 11, 12 e superiores.
 
 🖨️ Impressão Bluetooth
 
-A função imprimirReciboBluetooth() já está integrada no componente da mesa.
+A função `printCupom()` está integrada no componente da mesa e usa a biblioteca `@xyzsola/react-native-thermal-printer`.
 
-Ela imprime:
-
-Nome da empresa
-
-CNPJ e endereço
-
-Data e hora
-
-Itens do pedido
-
-Total
-
-Forma de pagamento
+O fluxo é:
+1.  **Configurar Impressora**: Busca por impressoras Bluetooth e salva o endereço MAC da primeira encontrada.
+2.  **Impressão**: Usa o MAC salvo para conectar, imprimir o cupom e desconectar, liberando a impressora para outros aparelhos.
 
 ⚠️ Certifique-se que o dispositivo está pareado com a impressora e que o Bluetooth está ligado.
-
-🧩 Outras Dependências do Projeto
-# Se não estiverem instaladas:
-yarn add @supabase/supabase-js
-yarn add expo-router
-yarn add react-native-svg
-yarn add react-native-gesture-handler react-native-reanimated
 
 🧽 Limpar o projeto (se der erro)
 cd android
@@ -123,4 +83,3 @@ npx expo run:android
 
 criar novo apk internal distribution
   eas build -p android --profile preview
-

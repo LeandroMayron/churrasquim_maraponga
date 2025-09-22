@@ -81,6 +81,7 @@ const Salao = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+    
       <FlatList
         data={mesas}
         keyExtractor={(item) => item.id.toString()}
