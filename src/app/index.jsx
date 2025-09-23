@@ -1,28 +1,31 @@
 import Colors from "@/constants/Colors";
-import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  TextInput,
-  Alert,
-  Pressable,
-  ActivityIndicator,
-  BackHandler
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Link } from "expo-router";
-import { useState, useEffect } from "react";
-import { router } from "expo-router";
-import { supabase } from "../lib/supabase";
+import { Link, router } from "expo-router";
 import { MotiView } from "moti";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  BackHandler,
+  Image,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { supabase } from "../lib/supabase";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
   // 🔒 Bloquear botão voltar no Android
   useEffect(() => {
@@ -31,6 +34,23 @@ export default function Login() {
       () => true
     );
     return () => backHandler.remove();
+  }, []);
+
+  // Efeito para controlar a visibilidade do teclado
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardDidShow",
+      () => setKeyboardVisible(true)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardDidHide",
+      () => setKeyboardVisible(false)
+    );
+
+    return () => {
+      keyboardDidHideListener.remove();
+      keyboardDidShowListener.remove();
+    };
   }, []);
 
   async function handleSignIn() {
@@ -54,67 +74,76 @@ export default function Login() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Image
-          source={require("../../assets/images/logoSemFundo.png")}
-          style={styles.logo}
-        />
-      </View>
+      <KeyboardAvoidingView
+        style={{ flex: 1, justifyContent: "center" }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        {!isKeyboardVisible && (
+          <View style={styles.header}>
+            <Image
+              source={require("../../assets/images/logoSemFundo.png")}
+              style={styles.logo}
+            />
+          </View>
+        )}
+        <View style={styles.form}>
+          <View>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              placeholder="Digite seu email"
+              style={styles.input}
+              value={email}
+              autoCapitalize="none"
+              onChangeText={setEmail}
+            />
+          </View>
 
-      <View style={styles.form}>
-        <View>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            placeholder="Digite seu email"
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-          />
-        </View>
+          <View>
+            <Text style={styles.label}>Senha</Text>
+            <TextInput
+              placeholder="Digite sua senha"
+              style={styles.input}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={password}
+              onChangeText={setPassword}
+            />
 
-        <View>
-          <Text style={styles.label}>Senha</Text>
-          <TextInput
-            placeholder="Digite sua senha"
-            style={styles.input}
-            secureTextEntry={!showPassword}
-            value={password}
-            onChangeText={setPassword}
-          />
-
-          <Ionicons
-            name={showPassword ? "eye" : "eye-off"}
-            size={24}
-            color={Colors.gold}
-            style={{ position: "absolute", right: 16, top: 38 }}
-            onPress={() => setShowPassword(!showPassword)}
-          />
-        </View>
-
-        <Pressable onPress={handleSignIn} disabled={loading}>
-          {({ pressed }) => (
-            <MotiView
-              style={styles.button}
-              from={{ scale: 1, opacity: 1 }}
-              animate={{
-                scale: pressed ? 0.95 : 1,
-                opacity: pressed ? 0.8 : 1,
-              }}
-              transition={{ type: "timing", duration: 150 }}
+            <Pressable
+              style={styles.eyeIcon}
+              onPress={() => setShowPassword(!showPassword)}
+              accessibilityLabel={showPassword ? "Ocultar senha" : "Mostrar senha"}
             >
-              {loading ? (
-                <ActivityIndicator size="small" color={Colors.acafrao} />
-              ) : (
-                <Text style={styles.buttonText}>Entrar</Text>
-              )}
-            </MotiView>
-          )}
-        </Pressable>
+              <Ionicons name={showPassword ? "eye" : "eye-off"} size={24} color={Colors.gold} />
+            </Pressable>
+          </View>
 
-        <Link href="/(auth)/signup/page" style={styles.link}>
-          <Text>Ainda não possui conta? Cadastre-se</Text>
-        </Link>
-      </View>
+          <Pressable onPress={handleSignIn} disabled={loading}>
+            {({ pressed }) => (
+              <MotiView
+                style={styles.button}
+                from={{ scale: 1, opacity: 1 }}
+                animate={{
+                  scale: pressed ? 0.95 : 1,
+                  opacity: pressed ? 0.8 : 1,
+                }}
+                transition={{ type: "timing", duration: 150 }}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color={Colors.acafrao} />
+                ) : (
+                  <Text style={styles.buttonText}>Entrar</Text>
+                )}
+              </MotiView>
+            )}
+          </Pressable>
+
+          <Link href="/(auth)/signup/page" style={styles.link}>
+            <Text style={styles.linkText}>Ainda não possui conta? Cadastre-se</Text>
+          </Link>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -122,12 +151,14 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingHorizontal: 16,
     backgroundColor: Colors.black,
   },
   header: {
     paddingTop: 20,
     alignItems: "center",
   },
+
   logo: {
     width: 250,
     height: 200,
@@ -159,6 +190,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 
+  eyeIcon: {
+    position: "absolute",
+    right: 14,
+    top: 38,
+  },
+
   button: {
     backgroundColor: Colors.gold,
     padding: 16,
@@ -175,10 +212,11 @@ const styles = StyleSheet.create({
   },
 
   link: {
-    alignItems: "center",
-    justifyContent: "center",
+    marginTop: 12,
+    alignSelf: "center",
+  },
+  linkText: {
     color: Colors.gray,
     textDecorationLine: "underline",
-    marginTop: 12,
   },
 });
