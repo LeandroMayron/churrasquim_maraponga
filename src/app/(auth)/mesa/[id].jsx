@@ -19,6 +19,25 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../../../lib/supabase";
 
+// NOVA FUNÇÃO: Remove acentos e caracteres especiais de uma string
+function normalizarTextoParaImpressao(texto) {
+  if (!texto) return "";
+  // Substitui caracteres acentuados por seus equivalentes sem acento
+  const comAcentos = "áàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ";
+  const semAcentos = "aaaaeeeiiioooouuucAAAAEEEIIIOOOOUUUC";
+
+  let novoTexto = texto
+    .split("")
+    .map((char) => {
+      const index = comAcentos.indexOf(char);
+      return index !== -1 ? semAcentos[index] : char;
+    })
+    .join("");
+
+  // Remove quaisquer outros caracteres que não sejam letras, números ou símbolos comuns
+  return novoTexto.replace(/[^a-zA-Z0-9\s.,:;!?|/\\_()$%-]/g, "");
+}
+
 async function solicitarPermissoesBluetooth() {
   if (Platform.OS === "android") {
     const permissoes = [];
@@ -61,23 +80,22 @@ export default function Mesa() {
   const [dadosParaImpressao, setDadosParaImpressao] = useState([]);
   const [modalImpressaoVisivel, setModalImpressaoVisivel] = useState(false);
 
-  const selecionarImpressora = async () => {    
+  const selecionarImpressora = async () => {
     try {
       await solicitarPermissoesBluetooth();
       await BLEPrinter.init();
       const devices = await BLEPrinter.getDeviceList();
-  
+
       if (!devices.length) {
         alert("Nenhuma impressora encontrada!");
         return;
       }
-  
+
       // Exemplo: sempre pega a primeira, mas você pode abrir um modal com devices.map(...)
       const escolhida = devices[0];
-  
+
       await AsyncStorage.setItem("printer_mac", escolhida.innerMacAddress);
       alert(`✅ Impressora ${escolhida.deviceName} salva!`);
-  
     } catch (err) {
       console.error("Erro ao selecionar impressora:", err);
       alert("Erro ao selecionar impressora: " + err.message);
@@ -362,12 +380,12 @@ export default function Mesa() {
 
       // Monta as linhas do pedido
       const linhas = dadosParaImpressao
-        .map(
-          (item) =>
-            `<Text align='left'>${item.quantity}x ${item.name}|R$ ${(
-              item.quantity * item.price
-            ).toFixed(2)}</Text><NewLine />`
-        )
+        .map((item) => {
+          const nomeNormalizado = normalizarTextoParaImpressao(item.name);
+          return `<Text align='left'>${item.quantity}x ${nomeNormalizado}|R$ ${(
+            item.quantity * item.price
+          ).toFixed(2)}</Text><NewLine />`;
+        })
         .join("");
 
       const total = calcularTotal(dadosParaImpressao).toFixed(2);
@@ -385,12 +403,14 @@ export default function Mesa() {
           <Line lineChar='-' />
           <Text align='right' bold='1'>TOTAL: R$ ${total}</Text>
           <NewLine />
-          <Text align='center'>Obrigado pela preferencia!</Text>
+          <Text align='center'>${normalizarTextoParaImpressao(
+            "Obrigado pela preferencia!"
+          )}</Text>
           <NewLine /><NewLine />
         </Printout>
       `;
 
-      await BLEPrinter.print(payload);
+      await BLEPrinter.printBill(payload);
 
       console.log("🟢 Recibo enviado para impressão!");
     } catch (err) {
@@ -434,7 +454,11 @@ export default function Mesa() {
                     style={styles.deleteButton}
                     onPress={() => removerItemDoPedido(item)}
                   >
-                    <Ionicons name="trash-outline" size={20} color={Colors.gold} />
+                    <Ionicons
+                      name="trash-outline"
+                      size={20}
+                      color={Colors.gold}
+                    />
                   </TouchableOpacity>
                 )}
               </View>
@@ -742,7 +766,7 @@ const styles = StyleSheet.create({
   },
   pedidoItemContainer: {
     flexDirection: "row",
-    justifyContent: "center", 
+    justifyContent: "center",
     alignItems: "center",
 
     paddingHorizontal: 10,
