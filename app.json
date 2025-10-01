@@ -3,10 +3,20 @@
     "name": "churrasquim_maraponga",
     "slug": "churrasquim_maraponga",
     "version": "1.0.0",
-    "newArchEnabled": true,
-
+    "orientation": "portrait",
+    "icon": "./assets/images/logo.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/images/logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
     "android": {
       "package": "com.leandro_mayron.churrasquim_maraponga",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/logo.png",
+        "backgroundColor": "#000000"
+      },
       "permissions": [
         "INTERNET",
         "VIBRATE",
