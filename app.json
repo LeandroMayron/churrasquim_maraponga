@@ -3,19 +3,13 @@
     "name": "churrasquim_maraponga",
     "slug": "churrasquim_maraponga",
     "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/images/logo.png",
-    "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/images/logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#000000"
-    },
+    "newArchEnabled": true,
+    "backgroundColor": "#1a1a1a",
+
     "android": {
       "package": "com.leandro_mayron.churrasquim_maraponga",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo.png",
-        "backgroundColor": "#000000"
+        "backgroundColor": "#1a1a1a"
       },
       "permissions": [
         "INTERNET",
@@ -23,7 +17,8 @@
         "SYSTEM_ALERT_WINDOW",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
-      ]
+      ],
+      "softwareKeyboardLayoutMode": "pan"
     },
 
     "plugins": [
