@@ -60,27 +60,42 @@ export default function Mesa() {
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [dadosParaImpressao, setDadosParaImpressao] = useState([]);
   const [modalImpressaoVisivel, setModalImpressaoVisivel] = useState(false);
+  const [printers, setPrinters] = useState([]);
+  const [printerModalVisible, setPrinterModalVisible] = useState(false);
+  const [isSearchingPrinters, setIsSearchingPrinters] = useState(false);
 
-  const selecionarImpressora = async () => {    
+  const buscarImpressoras = async () => {
+    setIsSearchingPrinters(true);
     try {
       await solicitarPermissoesBluetooth();
       await BLEPrinter.init();
       const devices = await BLEPrinter.getDeviceList();
-  
+
       if (!devices.length) {
-        alert("Nenhuma impressora encontrada!");
+        alert(
+          "Nenhuma impressora encontrada! Verifique se o Bluetooth está ligado e a impressora pareada."
+        );
         return;
       }
-  
-      // Exemplo: sempre pega a primeira, mas você pode abrir um modal com devices.map(...)
-      const escolhida = devices[0];
-  
-      await AsyncStorage.setItem("printer_mac", escolhida.innerMacAddress);
-      alert(`✅ Impressora ${escolhida.deviceName} salva!`);
-  
+
+      setPrinters(devices);
+      setPrinterModalVisible(true); // Abre o modal com a lista
     } catch (err) {
-      console.error("Erro ao selecionar impressora:", err);
-      alert("Erro ao selecionar impressora: " + err.message);
+      console.error("Erro ao buscar impressoras:", err);
+      alert("Erro ao buscar impressoras: " + err.message);
+    } finally {
+      setIsSearchingPrinters(false);
+    }
+  };
+
+  const selecionarImpressora = async (impressora) => {
+    try {
+      await AsyncStorage.setItem("printer_mac", impressora.innerMacAddress);
+      alert(`✅ Impressora ${impressora.deviceName} salva!`);
+      setPrinterModalVisible(false); // Fecha o modal de seleção
+    } catch (err) {
+      console.error("Erro ao salvar impressora:", err);
+      alert("Erro ao salvar impressora: " + err.message);
     }
   };
 
@@ -340,6 +355,14 @@ export default function Mesa() {
     }
   };
 
+  // ✨ Função para remover acentos e caracteres especiais
+  const removerAcentos = (texto) => {
+    if (!texto) return "";
+    return texto
+      .normalize("NFD") // Normaliza para decompor os caracteres (ex: 'ç' -> 'c' + '̧')
+      .replace(/[\u0300-\u036f]/g, ""); // Remove os diacríticos (acentos)
+  };
+
   const printCupom = async () => {
     let printerConnection = null;
     try {
@@ -363,10 +386,13 @@ export default function Mesa() {
       // Monta as linhas do pedido
       const linhas = dadosParaImpressao
         .map(
-          (item) =>
-            `<Text align='left'>${item.quantity}x ${item.name}|R$ ${(
-              item.quantity * item.price
-            ).toFixed(2)}</Text><NewLine />`
+          (
+            item // Limpa o nome do item antes de adicionar ao payload
+          ) =>
+            `<Text align='left'>${item.quantity}x ${removerAcentos(
+              item.name
+            )}|R$ ${(item.quantity * item.price) // O preço não precisa de tratamento
+              .toFixed(2)}</Text><NewLine />`
         )
         .join("");
 
@@ -385,7 +411,9 @@ export default function Mesa() {
           <Line lineChar='-' />
           <Text align='right' bold='1'>TOTAL: R$ ${total}</Text>
           <NewLine />
-          <Text align='center'>Obrigado pela preferencia!</Text>
+          <Text align='center'>${removerAcentos(
+            "Obrigado pela preferência!"
+          )}</Text>
           <NewLine /><NewLine />
         </Printout>
       `;
@@ -434,7 +462,11 @@ export default function Mesa() {
                     style={styles.deleteButton}
                     onPress={() => removerItemDoPedido(item)}
                   >
-                    <Ionicons name="trash-outline" size={20} color={Colors.gold} />
+                    <Ionicons
+                      name="trash-outline"
+                      size={20}
+                      color={Colors.gold}
+                    />
                   </TouchableOpacity>
                 )}
               </View>
@@ -615,9 +647,16 @@ export default function Mesa() {
                 styles.closeButton,
                 { backgroundColor: Colors.acafrao, marginTop: 10 },
               ]}
-              onPress={selecionarImpressora}
+              onPress={buscarImpressoras}
+              disabled={isSearchingPrinters}
             >
-              <Text style={styles.closeButtonText}>Configurar Impressora</Text>
+              {isSearchingPrinters ? (
+                <ActivityIndicator color={Colors.white} />
+              ) : (
+                <Text style={styles.closeButtonText}>
+                  Configurar Impressora
+                </Text>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -630,6 +669,45 @@ export default function Mesa() {
               <Text style={[styles.closeButtonText, { color: Colors.black }]}>
                 Fechar
               </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de Seleção de Impressora */}
+      <Modal
+        visible={printerModalVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setPrinterModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Selecione uma Impressora</Text>
+            <ScrollView style={{ maxHeight: 300 }}>
+              {printers.map((printer, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.itemContainer}
+                  onPress={() => selecionarImpressora(printer)}
+                >
+                  <Text style={styles.itemText}>
+                    <Ionicons name="print" size={18} /> {printer.deviceName}
+                  </Text>
+                  <Text style={styles.itemPrice}>
+                    {printer.innerMacAddress}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={[
+                styles.closeButton,
+                { backgroundColor: Colors.acafrao, marginTop: 10 },
+              ]}
+              onPress={() => setPrinterModalVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Cancelar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -742,7 +820,7 @@ const styles = StyleSheet.create({
   },
   pedidoItemContainer: {
     flexDirection: "row",
-    justifyContent: "center", 
+    justifyContent: "center",
     alignItems: "center",
 
     paddingHorizontal: 10,

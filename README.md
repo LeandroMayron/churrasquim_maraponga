@@ -83,3 +83,6 @@ npx expo run:android
 
 criar novo apk internal distribution
   eas build -p android --profile preview
+
+atualizações da branch
+

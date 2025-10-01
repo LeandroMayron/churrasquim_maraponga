@@ -15,7 +15,8 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  View
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
@@ -36,6 +37,20 @@ export default function Login() {
     return () => backHandler.remove();
   }, []);
 
+
+  // ✨ Listener para visibilidade do teclado
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardDidShow",
+      () => {
+        setKeyboardVisible(true);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardDidHide",
+      () => {
+        setKeyboardVisible(false);
+      }
   // Efeito para controlar a visibilidade do teclado
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -75,6 +90,77 @@ export default function Login() {
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.innerContainer}>
+            {/* A logo só aparece se o teclado não estiver visível */}
+            {!isKeyboardVisible && (
+              <View style={styles.header}>
+                <Image
+                  source={require("../../assets/images/logoSemFundo.png")}
+                  style={styles.logo}
+                />
+              </View>
+            )}
+
+            <View style={styles.form}>
+              <View>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  placeholder="Digite seu email"
+                  style={styles.input}
+                  value={email}
+                  onChangeText={setEmail}
+                />
+              </View>
+
+              <View>
+                <Text style={styles.label}>Senha</Text>
+                <TextInput
+                  placeholder="Digite sua senha"
+                  style={styles.input}
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                />
+
+                <Ionicons
+                  name={showPassword ? "eye" : "eye-off"}
+                  size={24}
+                  color={Colors.gold}
+                  style={{ position: "absolute", right: 16, top: 38 }}
+                  onPress={() => setShowPassword(!showPassword)}
+                />
+              </View>
+
+              <Pressable onPress={handleSignIn} disabled={loading}>
+                {({ pressed }) => (
+                  <MotiView
+                    style={styles.button}
+                    from={{ scale: 1, opacity: 1 }}
+                    animate={{
+                      scale: pressed ? 0.95 : 1,
+                      opacity: pressed ? 0.8 : 1,
+                    }}
+                    transition={{ type: "timing", duration: 150 }}
+                  >
+                    {loading ? (
+                      <ActivityIndicator size="small" color={Colors.acafrao} />
+                    ) : (
+                      <Text style={styles.buttonText}>Entrar</Text>
+                    )}
+                  </MotiView>
+                )}
+              </Pressable>
+
+              <Link href="/(auth)/signup/page" style={styles.link}>
+                <Text>Ainda não possui conta? Cadastre-se</Text>
+              </Link>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
         style={{ flex: 1, justifyContent: "center" }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
