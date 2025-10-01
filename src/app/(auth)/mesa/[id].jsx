@@ -355,6 +355,14 @@ export default function Mesa() {
     }
   };
 
+  // ✨ Função para remover acentos e caracteres especiais
+  const removerAcentos = (texto) => {
+    if (!texto) return "";
+    return texto
+      .normalize("NFD") // Normaliza para decompor os caracteres (ex: 'ç' -> 'c' + '̧')
+      .replace(/[\u0300-\u036f]/g, ""); // Remove os diacríticos (acentos)
+  };
+
   const printCupom = async () => {
     let printerConnection = null;
     try {
@@ -378,10 +386,13 @@ export default function Mesa() {
       // Monta as linhas do pedido
       const linhas = dadosParaImpressao
         .map(
-          (item) =>
-            `<Text align='left'>${item.quantity}x ${item.name}|R$ ${(
-              item.quantity * item.price
-            ).toFixed(2)}</Text><NewLine />`
+          (
+            item // Limpa o nome do item antes de adicionar ao payload
+          ) =>
+            `<Text align='left'>${item.quantity}x ${removerAcentos(
+              item.name
+            )}|R$ ${(item.quantity * item.price) // O preço não precisa de tratamento
+              .toFixed(2)}</Text><NewLine />`
         )
         .join("");
 
@@ -400,7 +411,9 @@ export default function Mesa() {
           <Line lineChar='-' />
           <Text align='right' bold='1'>TOTAL: R$ ${total}</Text>
           <NewLine />
-          <Text align='center'>Obrigado pela preferencia!</Text>
+          <Text align='center'>${removerAcentos(
+            "Obrigado pela preferência!"
+          )}</Text>
           <NewLine /><NewLine />
         </Printout>
       `;
