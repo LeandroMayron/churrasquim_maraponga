@@ -37,7 +37,6 @@ export default function Login() {
     return () => backHandler.remove();
   }, []);
 
-
   // ✨ Listener para visibilidade do teclado
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -51,15 +50,6 @@ export default function Login() {
       () => {
         setKeyboardVisible(false);
       }
-  // Efeito para controlar a visibilidade do teclado
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      "keyboardDidShow",
-      () => setKeyboardVisible(true)
-    );
-    const keyboardDidHideListener = Keyboard.addListener(
-      "keyboardDidHide",
-      () => setKeyboardVisible(false)
     );
 
     return () => {
@@ -161,74 +151,6 @@ export default function Login() {
             </View>
           </View>
         </TouchableWithoutFeedback>
-        style={{ flex: 1, justifyContent: "center" }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        {!isKeyboardVisible && (
-          <View style={styles.header}>
-            <Image
-              source={require("../../assets/images/logoSemFundo.png")}
-              style={styles.logo}
-            />
-          </View>
-        )}
-        <View style={styles.form}>
-          <View>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              placeholder="Digite seu email"
-              style={styles.input}
-              value={email}
-              autoCapitalize="none"
-              onChangeText={setEmail}
-            />
-          </View>
-
-          <View>
-            <Text style={styles.label}>Senha</Text>
-            <TextInput
-              placeholder="Digite sua senha"
-              style={styles.input}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={password}
-              onChangeText={setPassword}
-            />
-
-            <Pressable
-              style={styles.eyeIcon}
-              onPress={() => setShowPassword(!showPassword)}
-              accessibilityLabel={showPassword ? "Ocultar senha" : "Mostrar senha"}
-            >
-              <Ionicons name={showPassword ? "eye" : "eye-off"} size={24} color={Colors.gold} />
-            </Pressable>
-          </View>
-
-          <Pressable onPress={handleSignIn} disabled={loading}>
-            {({ pressed }) => (
-              <MotiView
-                style={styles.button}
-                from={{ scale: 1, opacity: 1 }}
-                animate={{
-                  scale: pressed ? 0.95 : 1,
-                  opacity: pressed ? 0.8 : 1,
-                }}
-                transition={{ type: "timing", duration: 150 }}
-              >
-                {loading ? (
-                  <ActivityIndicator size="small" color={Colors.acafrao} />
-                ) : (
-                  <Text style={styles.buttonText}>Entrar</Text>
-                )}
-              </MotiView>
-            )}
-          </Pressable>
-
-          <Link href="/(auth)/signup/page" style={styles.link}>
-            <Text style={styles.linkText}>Ainda não possui conta? Cadastre-se</Text>
-          </Link>
-        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -237,14 +159,12 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
     backgroundColor: Colors.black,
   },
   header: {
     paddingTop: 20,
     alignItems: "center",
   },
-
   logo: {
     width: 250,
     height: 200,
@@ -276,12 +196,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 
-  eyeIcon: {
-    position: "absolute",
-    right: 14,
-    top: 38,
-  },
-
   button: {
     backgroundColor: Colors.gold,
     padding: 16,
@@ -298,11 +212,10 @@ const styles = StyleSheet.create({
   },
 
   link: {
-    marginTop: 12,
-    alignSelf: "center",
-  },
-  linkText: {
+    alignItems: "center",
+    justifyContent: "center",
     color: Colors.gray,
     textDecorationLine: "underline",
+    marginTop: 12,
   },
 });
