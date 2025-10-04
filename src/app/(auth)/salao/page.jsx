@@ -1,5 +1,3 @@
-// app/salao.tsx
-
 import Colors from "@/constants/Colors";
 import { AntDesign } from "@expo/vector-icons";
 import React, { useState, useEffect } from "react";
@@ -8,13 +6,13 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
   Dimensions,
+  SafeAreaView,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { MotiView } from "moti";
 import { useRouter } from "expo-router";
-import { supabase } from "../../../lib/supabase"; // ajuste se necessário
+import { supabase } from "../../../lib/supabase";
+import dayjs from "dayjs";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const NUM_COLUMNS = 4;
@@ -22,77 +20,99 @@ const ITEM_MARGIN = 12;
 const ITEM_WIDTH =
   (SCREEN_WIDTH - ITEM_MARGIN * (NUM_COLUMNS + 1)) / NUM_COLUMNS;
 
-
-const Salao = () => {
+export default function Salao() {
   const [mesas, setMesas] = useState([]);
   const router = useRouter();
 
-  // Carregar mesas do Supabase
   const carregarMesas = async () => {
-    const { data, error } = await supabase
-      .from("pedidos")
-      .select("mesa_id, status");
+    const { data: mesasExtras } = await supabase
+      .from("mesas")
+      .select("*")
+      .order("numero");
 
-    if (!error && data) {
-      const totalMesas = mesas.length > 0 ? mesas.length : 20;
-      const mesasAtualizadas = Array.from({ length: totalMesas }, (_, i) => {
-        const mesaId = i + 1;
-        const pedidoAberto = data.find(
-          (p) =>
-            Number(p.mesa_id) === mesaId &&
-            p.status?.toLowerCase().trim() === "aberto"
-        );
-        return {
-          id: mesaId,
-          status: pedidoAberto ? "aberto" : "livre",
-        };
-      });
-      setMesas(mesasAtualizadas);
-    }
+    const { data: pedidos } = await supabase
+      .from("pedidos")
+      .select("mesa_id,status");
+
+    // Mesas fixas 1-20
+    const mesasFixas = Array.from({ length: 20 }, (_, i) => {
+      const mesaNumber = i + 1;
+      const pedidoAberto = pedidos?.find(
+        (p) =>
+          Number(p.mesa_id) === mesaNumber &&
+          p.status?.toLowerCase() === "aberto"
+      );
+      return {
+        id: mesaNumber,
+        numero: mesaNumber,
+        status: pedidoAberto ? "aberto" : "livre",
+      };
+    });
+
+    // Filtrar mesas extras que não expiraram (6h)
+    const mesasExtrasValidas =
+      mesasExtras
+        ?.filter((m) => dayjs().diff(dayjs(m.criado_em), "hour") < 6)
+        .map((m) => {
+          const pedidoAberto = pedidos?.find(
+            (p) =>
+              Number(p.mesa_id) === m.numero &&
+              p.status?.toLowerCase() === "aberto"
+          );
+          return { ...m, status: pedidoAberto ? "aberto" : "livre" };
+        }) || [];
+
+    setMesas([...mesasFixas, ...mesasExtrasValidas]);
   };
 
   useEffect(() => {
     carregarMesas();
 
-    // Atualização em tempo real
     const channel = supabase
       .channel("pedidos-change")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "pedidos" },
-        () => {
-          carregarMesas();
-        }
+        carregarMesas
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => supabase.removeChannel(channel);
   }, []);
 
-  const adicionarMesa = () => {
-    setMesas((prev) => [...prev, { id: prev.length + 1, status: "livre" }]);
+  const adicionarMesa = async () => {
+    const mesasExtras = mesas.filter((m) => m.numero > 20);
+    const novoNumero = 21 + mesasExtras.length;
+
+    try {
+      await supabase
+        .from("mesas")
+        .insert([
+          {
+            nome: `Mesa ${novoNumero}`,
+            numero: novoNumero,
+            criado_em: new Date().toISOString(),
+          },
+        ]);
+      carregarMesas(); // recarrega para atualizar a lista com a nova mesa
+    } catch (err) {
+      console.error("Erro ao criar mesa:", err);
+    }
   };
 
-  const handleMesaPress = (mesaId) => {
-    router.push(`/mesa/${mesaId}`);
-  };
+  const handleMesaPress = (mesaId) => router.push(`/mesa/${mesaId}`);
 
   return (
     <SafeAreaView style={styles.container}>
-    
       <FlatList
         data={mesas}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => item.numero.toString()}
         numColumns={NUM_COLUMNS}
         contentContainerStyle={styles.mesasContainer}
         renderItem={({ item }) => (
           <TouchableOpacity
-            onPress={() => handleMesaPress(item.id)}
+            onPress={() => handleMesaPress(item.numero)}
             activeOpacity={0.8}
-            accessibilityLabel={`Mesa ${item.id}`}
-            accessible
           >
             <MotiView
               from={{ scale: 1 }}
@@ -113,31 +133,22 @@ const Salao = () => {
                   item.status === "aberto" && { color: Colors.white },
                 ]}
               >
-                Mesa {item.id}
+                Mesa {item.numero}
               </Text>
             </MotiView>
           </TouchableOpacity>
         )}
       />
-
-      {/* Botão flutuante para adicionar mesa */}
       <TouchableOpacity style={styles.fab} onPress={adicionarMesa}>
         <AntDesign name="plus" size={32} color={Colors.white} />
       </TouchableOpacity>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.black,
-  },
-  mesasContainer: {
-    padding: 12,
-    paddingBottom: 120,
-    alignItems: "center",
-  },
+  container: { flex: 1, backgroundColor: Colors.black },
+  mesasContainer: { padding: 12, paddingBottom: 120, alignItems: "center" },
   mesa: {
     borderRadius: 8,
     paddingVertical: 16,
@@ -145,11 +156,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     margin: ITEM_MARGIN / 2,
   },
-  mesaText: {
-    color: Colors.black,
-    fontWeight: "bold",
-    fontSize: 16,
-  },
+  mesaText: { color: Colors.black, fontWeight: "bold", fontSize: 16 },
   fab: {
     position: "absolute",
     right: 24,
@@ -163,5 +170,3 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 });
-
-export default Salao;
