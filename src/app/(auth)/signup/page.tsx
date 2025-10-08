@@ -29,22 +29,6 @@ export default function Signup() {
 async function handleSignUp() {
   setLoading(true);
 
-  // 1. Verificar se o email está aprovado
-  const { data: approvedEmail, error: checkError } = await supabase
-    .from("approved_emails")
-    .select("email")
-    .eq("email", email.toLowerCase())
-    .single();
-
-  if (checkError || !approvedEmail) {
-    Alert.alert(
-      "Cadastro bloqueado",
-      "Este email não está autorizado a se cadastrar."
-    );
-    setLoading(false);
-    return;
-  }
-
   // 2. Se aprovado, fazer o cadastro normalmente
   const { error } = await supabase.auth.signUp({
     email: email.toLowerCase(),
