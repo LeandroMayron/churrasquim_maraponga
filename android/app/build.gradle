@@ -87,13 +87,13 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.leandro_mayron.churrasquim_maraponga'
+    namespace "com.churrasquimmaraponga"
     defaultConfig {
-        applicationId 'com.leandro_mayron.churrasquim_maraponga'
+        applicationId "com.churrasquimmaraponga"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.0.0"
+        versionName "1.0"
     }
     signingConfigs {
         debug {
