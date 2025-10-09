@@ -95,6 +95,10 @@ Abra o aplicativo no celular. Ele se conectará automaticamente ao servidor, per
 
 Para gerar uma versão final do aplicativo (APK para instalação direta), use o perfil `production` do EAS.
 
+Depois, limpe o cache e rode o app novamente:
+
+npx expo start -c
+
 ```bash
 eas build -p android --profile production
 ```
@@ -167,3 +171,5 @@ npx expo run:android
 
 para resolver problemas de build 
     npx expo prebuild --clean
+
+
