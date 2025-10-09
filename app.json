@@ -4,21 +4,28 @@
     "slug": "churrasquim_maraponga",
     "version": "1.0.0",
     "newArchEnabled": true,
-    "backgroundColor": "#1a1a1a",
+    "backgroundColor": "#000000",
     "orientation": "portrait",
     "icon": "./assets/images/icone.png",
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1a1a1a"
+      "backgroundColor": "#000000"
     },
 
     "scheme": "churrasquim",
 
     "android": {
       "package": "com.leandro_mayron.churrasquim_maraponga",
+      "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+      },
       "adaptiveIcon": {
-        "backgroundColor": "#1a1a1a"
+        "image": "./assets/images/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#000000"
       },
       "permissions": [
         "INTERNET",

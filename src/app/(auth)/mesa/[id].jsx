@@ -341,10 +341,9 @@ export default function Mesa() {
       if (!error) {
         console.log("✅ Mesa fechada com sucesso.");
 
-        setDadosParaImpressao(pedidoAberto.itens);
-        setModalImpressaoVisivel(true); // <-- ABRE O MODAL DE IMPRESSÃO
         setMesaFechada(true);
         setPedidoEnviado([]);
+        setConfirmModalVisible(false);
       } else {
         console.error("Erro ao fechar mesa:", error);
         alert("Erro ao fechar a mesa. Tente novamente.");
@@ -353,6 +352,12 @@ export default function Mesa() {
       console.error("Erro inesperado ao fechar a mesa:", err);
       alert("Erro inesperado. Tente novamente.");
     }
+  };
+
+  // ✨ Função para preparar e mostrar o modal de impressão do pedido atual
+  const imprimirPedidoAtual = () => {
+    setDadosParaImpressao(pedidoEnviado);
+    setModalImpressaoVisivel(true);
   };
 
   // ✨ Função para remover acentos e caracteres especiais
@@ -400,7 +405,7 @@ export default function Mesa() {
 
       const payload = `
         <Printout>
-          <Text align='center' bold='1' fontWidth='2' fontHeight='2'>CHURRASQUINHO</Text>
+          <Text align='center' bold='1' fontWidth='2' fontHeight='2'>CHURRASQUIM</Text>
           <NewLine />
           <Text align='center' bold='1' fontWidth='2' fontHeight='2'>MARAPONGA</Text>
           <NewLine />
@@ -550,6 +555,15 @@ export default function Mesa() {
                     Fechar Mesa
                   </Text>
                 </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.closeButton,
+                    { backgroundColor: Colors.gold, marginTop: 12 },
+                  ]} // Chama a nova função
+                  onPress={imprimirPedidoAtual}
+                >
+                  <Text style={[styles.closeButtonText]}>Imprimir Pedido</Text>
+                </TouchableOpacity>
               </View>
             )}
           </>
@@ -578,7 +592,7 @@ export default function Mesa() {
               Deseja realmente fechar a mesa?
             </Text>
             <Text style={{ marginBottom: 20 }}>
-              Isso encerrará os pedidos e enviará o cupom para impressão.
+              Isso encerrará os pedidos para esta mesa.
             </Text>
             <TouchableOpacity
               style={[styles.closeButton, { backgroundColor: Colors.gold }]}
@@ -639,7 +653,9 @@ export default function Mesa() {
               ]}
               onPress={printCupom}
             >
-              <Text style={styles.closeButtonText}>Impressão</Text>
+              <Text style={[styles.closeButtonText, { color: Colors.black }]}>
+                Imprimir
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
