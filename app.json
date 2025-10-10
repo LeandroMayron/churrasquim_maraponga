@@ -6,7 +6,7 @@
     "newArchEnabled": true,
     "backgroundColor": "#000000",
     "orientation": "portrait",
-    "icon": "./assets/images/logo.png",
+    "icon": "./assets/images/icone.png",
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "cover",
@@ -18,8 +18,8 @@
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "backgroundColor": "#000000",
-        "foregroundImage": "./assets/images/logo.png",
-        "backgroundImage": "./assets/images/adaptive-background.png"
+        "foregroundImage": "./assets/images/iconeAdaptive.png",
+        "backgroundImage": "./assets/images/iconeAdaptive.png"
       },
       "permissions": [
         "INTERNET",
