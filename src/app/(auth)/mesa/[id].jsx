@@ -452,7 +452,7 @@ const printCupom = async () => {
 
     // 🔹 Gera o código PIX e o QR Code base64
     const codigoPix = gerarCodigoPix(
-      "seuemail@dominio.com", // 🟡 SUA CHAVE PIX AQUI
+      "06943961411", // 🟡 SUA CHAVE PIX AQUI
       "CHURRASQUIM MARAPONGA",
       "FORTALEZA",
       parseFloat(total)

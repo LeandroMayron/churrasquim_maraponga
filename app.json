@@ -12,9 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
-
     "scheme": "churrasquim",
-
     "android": {
       "package": "com.leandro_mayron.churrasquim_maraponga",
       "edgeToEdgeEnabled": true,
@@ -29,18 +27,30 @@
         "VIBRATE",
         "SYSTEM_ALERT_WINDOW",
         "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "INTERNET",
+        "VIBRATE",
+        "SYSTEM_ALERT_WINDOW",
+        "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
       ],
-      "softwareKeyboardLayoutMode": "pan"
+      "softwareKeyboardLayoutMode": "pan",
+      "runtimeVersion": "1.0.0"
     },
-
     "plugins": [
       "./plugins/withBluetoothPermissions.js"
     ],
-
     "extra": {
       "eas": {
         "projectId": "365547c8-bdd4-4f4f-9bde-7ef531061c2a"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/365547c8-bdd4-4f4f-9bde-7ef531061c2a"
+    },
+    "ios": {
+      "runtimeVersion": {
+        "policy": "appVersion"
       }
     }
   }
