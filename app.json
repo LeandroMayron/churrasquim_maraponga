@@ -6,9 +6,9 @@
     "newArchEnabled": true,
     "backgroundColor": "#000000",
     "orientation": "portrait",
-    "icon": "./assets/images/icone.png",
+    "icon": "./assets/images/iconeSemFundo.png",
     "splash": {
-      "image": "./assets/images/icone.png",
+      "image": "./assets/images/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
@@ -17,10 +17,10 @@
 
     "android": {
       "package": "com.leandro_mayron.churrasquim_maraponga",
-      "edgeToEdge": true,
+      "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "backgroundColor": "#000000",
-        "foregroundImage": "./assets/images/icone.png",
+        "foregroundImage": "./assets/images/iconeSemFundo.png",
         "backgroundImage": "./assets/images/adaptive-background.png",
         "resizeMode": "contain"
       },
