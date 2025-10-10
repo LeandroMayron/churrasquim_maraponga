@@ -6,10 +6,10 @@
     "newArchEnabled": true,
     "backgroundColor": "#000000",
     "orientation": "portrait",
-    "icon": "./assets/images/iconeSemFundo.png",
+    "icon": "./assets/images/logo.png",
     "splash": {
       "image": "./assets/images/splash.png",
-      "resizeMode": "contain",
+      "resizeMode": "cover",
       "backgroundColor": "#000000"
     },
     "scheme": "churrasquim",
@@ -18,15 +18,10 @@
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "backgroundColor": "#000000",
-        "foregroundImage": "./assets/images/iconeSemFundo.png",
+        "foregroundImage": "./assets/images/logo.png",
         "backgroundImage": "./assets/images/adaptive-background.png"
       },
       "permissions": [
-        "INTERNET",
-        "VIBRATE",
-        "SYSTEM_ALERT_WINDOW",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
         "INTERNET",
         "VIBRATE",
         "SYSTEM_ALERT_WINDOW",
