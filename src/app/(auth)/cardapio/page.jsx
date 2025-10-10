@@ -1,15 +1,15 @@
 import Colors from "@/constants/Colors";
 import { useEffect, useState } from "react";
-import Header from "../../../components/header/index";
 import {
   ActivityIndicator,
   Alert,
   SafeAreaView,
-  ScrollView,
   StyleSheet,
   Text,
   View,
+  FlatList,
 } from "react-native";
+import Header from "../../../components/header/index";
 
 const MENU_URL =
   "https://6644-fontend.github.io/menu-churrasquinho-maraponga/menu.json";
@@ -37,39 +37,58 @@ const Cardapio = () => {
   }, []);
 
   if (loading) {
-    return <ActivityIndicator color={Colors.gold} style={{ flex: 1 }} />;
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <ActivityIndicator color={Colors.gold} size="large" />
+      </SafeAreaView>
+    );
   }
 
-  return (
-    <SafeAreaView>
-      <Header />
-      <ScrollView>
-        <View style={styles.container}>
-          {menu.map((categoria, idx) => (
-            <View key={idx}>
-              <Text style={styles.titulo}>{categoria.categoria}</Text>
-              {categoria.itens.map((item, i) => (
-                <View style={styles.item} key={i}>
-                  <Text style={styles.text}>{item.name}</Text>
-                  <Text style={styles.preco}>
-                    R$ {item.price.toFixed(2).replace(".", ",")}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          ))}
+  // Renderiza cada categoria e seus itens
+  const renderCategoria = ({ item }) => (
+    <View style={styles.categoriaContainer}>
+      <Text style={styles.titulo}>{item.categoria}</Text>
+      {item.itens.map((i, idx) => (
+        <View style={styles.item} key={idx}>
+          <Text style={styles.text}>{i.name}</Text>
+          <Text style={styles.preco}>
+            R$ {i.price.toFixed(2).replace(".", ",")}
+          </Text>
         </View>
-      </ScrollView>
+      ))}
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.pageContainer}>
+        <Header />
+        <FlatList
+          data={menu}
+          keyExtractor={(item, idx) => idx.toString()}
+          renderItem={renderCategoria}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        />
+      </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: Colors.black,
   },
-
+  pageContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 60, // garante espaço extra no final da lista
+  },
+  categoriaContainer: {
+    marginBottom: 15,
+  },
   titulo: {
     width: "100%",
     backgroundColor: Colors.gold,
@@ -82,16 +101,14 @@ const styles = StyleSheet.create({
   item: {
     flexDirection: "row",
     justifyContent: "space-between",
+    marginBottom: 5,
   },
-
   text: {
     color: Colors.white,
     fontWeight: "bold",
     textTransform: "uppercase",
     paddingLeft: 5,
-    marginBottom: 5,
   },
-
   preco: {
     color: Colors.gold,
     fontWeight: "bold",
