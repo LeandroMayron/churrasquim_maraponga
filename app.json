@@ -19,8 +19,7 @@
       "adaptiveIcon": {
         "backgroundColor": "#000000",
         "foregroundImage": "./assets/images/iconeSemFundo.png",
-        "backgroundImage": "./assets/images/adaptive-background.png",
-        "resizeMode": "contain"
+        "backgroundImage": "./assets/images/adaptive-background.png"
       },
       "permissions": [
         "INTERNET",
