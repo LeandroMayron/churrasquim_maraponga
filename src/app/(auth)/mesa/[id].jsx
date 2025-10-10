@@ -341,10 +341,9 @@ export default function Mesa() {
       if (!error) {
         console.log("✅ Mesa fechada com sucesso.");
 
-        setDadosParaImpressao(pedidoAberto.itens);
-        setModalImpressaoVisivel(true); // <-- ABRE O MODAL DE IMPRESSÃO
         setMesaFechada(true);
         setPedidoEnviado([]);
+        setConfirmModalVisible(false);
       } else {
         console.error("Erro ao fechar mesa:", error);
         alert("Erro ao fechar a mesa. Tente novamente.");
@@ -355,6 +354,12 @@ export default function Mesa() {
     }
   };
 
+  // ✨ Função para preparar e mostrar o modal de impressão do pedido atual
+  const imprimirPedidoAtual = () => {
+    setDadosParaImpressao(pedidoEnviado);
+    setModalImpressaoVisivel(true);
+  };
+
   // ✨ Função para remover acentos e caracteres especiais
   const removerAcentos = (texto) => {
     if (!texto) return "";
@@ -363,76 +368,137 @@ export default function Mesa() {
       .replace(/[\u0300-\u036f]/g, ""); // Remove os diacríticos (acentos)
   };
 
-  const printCupom = async () => {
-    let printerConnection = null;
-    try {
-      console.log("🖨️ Iniciando impressão do recibo...");
+  // 🔹 Gera o código EMV estático do PIX
+  const gerarCodigoPix = (
+    chavePix,
+    nome,
+    cidade,
+    valor,
+    txid = "MESA" + id
+  ) => {
+    const format = (id, value) =>
+      `${id}${String(value.length).padStart(2, "0")}${value}`;
 
-      await BLEPrinter.init();
+    const valorCentavos = valor.toFixed(2);
+    const merchantAccount =
+      format("00", "BR.GOV.BCB.PIX") + format("01", chavePix);
 
-      const mac = await AsyncStorage.getItem("printer_mac");
-      if (!mac) {
-        alert("Nenhuma impressora configurada! Configure antes de imprimir.");
-        return;
-      }
+    const additionalData = format("05", txid);
 
-      // Conecta à impressora
-      printerConnection = await BLEPrinter.connectPrinter(mac);
-      if (!printerConnection) {
-        throw new Error("Não foi possível conectar à impressora.");
-      }
-      console.log("✅ Conectado na impressora:", mac);
+    const payload =
+      "000201" +
+      format("26", merchantAccount) +
+      format("52", "0000") +
+      format("53", "986") +
+      format("54", valorCentavos) +
+      format("58", "BR") +
+      format("59", nome) +
+      format("60", cidade) +
+      format("62", additionalData) +
+      "6304";
 
-      // Monta as linhas do pedido
-      const linhas = dadosParaImpressao
-        .map(
-          (
-            item // Limpa o nome do item antes de adicionar ao payload
-          ) =>
-            `<Text align='left'>${item.quantity}x ${removerAcentos(
-              item.name
-            )}|R$ ${(item.quantity * item.price) // O preço não precisa de tratamento
-              .toFixed(2)}</Text><NewLine />`
-        )
-        .join("");
+    // 🔹 Calcula CRC16
+    const polinomio = 0x1021;
+    let resultado = 0xffff;
 
-      const total = calcularTotal(dadosParaImpressao).toFixed(2);
-
-      const payload = `
-        <Printout>
-          <Text align='center' bold='1' fontWidth='2' fontHeight='2'>CHURRASQUINHO</Text>
-          <NewLine />
-          <Text align='center' bold='1' fontWidth='2' fontHeight='2'>MARAPONGA</Text>
-          <NewLine />
-          <Line lineChar='-' />
-          <Text align='left'>Mesa ${id}</Text>
-          <NewLine />
-          ${linhas}
-          <Line lineChar='-' />
-          <Text align='right' bold='1'>TOTAL: R$ ${total}</Text>
-          <NewLine />
-          <Text align='center'>${removerAcentos(
-            "Obrigado pela preferência!"
-          )}</Text>
-          <NewLine /><NewLine />
-        </Printout>
-      `;
-
-      await BLEPrinter.print(payload);
-
-      console.log("🟢 Recibo enviado para impressão!");
-    } catch (err) {
-      console.error("❌ Erro ao imprimir recibo:", err);
-      alert("Falha ao imprimir: " + err.message);
-    } finally {
-      if (printerConnection) {
-        await delay(500); // Pequena pausa para garantir que a impressão foi enviada
-        BLEPrinter.closeConn()
-          .then(() => console.log("🔌 Impressora desconectada."))
-          .catch((e) => console.error("Erro ao desconectar:", e));
+    for (let i = 0; i < payload.length; i++) {
+      resultado ^= payload.charCodeAt(i) << 8;
+      for (let j = 0; j < 8; j++) {
+        resultado =
+          resultado & 0x8000 ? (resultado << 1) ^ polinomio : resultado << 1;
+        resultado &= 0xffff;
       }
     }
+
+    const crc = resultado.toString(16).toUpperCase().padStart(4, "0");
+    return payload + crc;
   };
+
+  // 🔹 Converte o código PIX em imagem QR base64 (pra imprimir)
+  const gerarQrBase64 = async (codigoPix) => {
+    const QRCode = require("qrcode");
+    return await QRCode.toDataURL(codigoPix, { margin: 1, scale: 4 });
+  };
+
+const printCupom = async () => {
+  let printerConnection = null;
+  try {
+    console.log("🖨️ Iniciando impressão do recibo...");
+
+    await BLEPrinter.init();
+
+    const mac = await AsyncStorage.getItem("printer_mac");
+    if (!mac) {
+      alert("Nenhuma impressora configurada! Configure antes de imprimir.");
+      return;
+    }
+
+    printerConnection = await BLEPrinter.connectPrinter(mac);
+    if (!printerConnection)
+      throw new Error("Não foi possível conectar à impressora.");
+
+    console.log("✅ Conectado na impressora:", mac);
+
+    const linhas = dadosParaImpressao
+      .map(
+        (item) =>
+          `<Text align='left'>${item.quantity}x ${removerAcentos(
+            item.name
+          )} | R$ ${(item.quantity * item.price).toFixed(2)}</Text><NewLine />`
+      )
+      .join("");
+
+    const total = calcularTotal(dadosParaImpressao).toFixed(2);
+
+    // 🔹 Gera o código PIX e o QR Code base64
+    const codigoPix = gerarCodigoPix(
+      "06943961411", // 🟡 SUA CHAVE PIX AQUI
+      "CHURRASQUIM MARAPONGA",
+      "FORTALEZA",
+      parseFloat(total)
+    );
+    const qrBase64 = await gerarQrBase64(codigoPix);
+
+    // 🔹 Monta o layout de impressão com o QR Code
+    const payload = `
+      <Printout>
+        <Text align='center' bold='1' fontWidth='2' fontHeight='2'>CHURRASQUIM</Text>
+        <NewLine />
+        <Text align='center' bold='1' fontWidth='2' fontHeight='2'>MARAPONGA</Text>
+        <NewLine />
+        <Line lineChar='-' />
+        <Text align='left'>Mesa ${id}</Text>
+        <NewLine />
+        ${linhas}
+        <Line lineChar='-' />
+        <Text align='right' bold='1'>TOTAL: R$ ${total}</Text>
+        <NewLine /><NewLine />
+        <Text align='center'>PAGUE PELO PIX:</Text>
+        <NewLine />
+        <Image>${qrBase64}</Image>
+        <NewLine /><NewLine />
+        <Text align='center'>${removerAcentos(
+          "Obrigado pela preferência!"
+        )}</Text>
+        <NewLine /><NewLine />
+      </Printout>
+    `;
+
+    await BLEPrinter.print(payload);
+    console.log("🟢 Recibo enviado para impressão!");
+  } catch (err) {
+    console.error("❌ Erro ao imprimir recibo:", err);
+    alert("Falha ao imprimir: " + err.message);
+  } finally {
+    if (printerConnection) {
+      await delay(500);
+      BLEPrinter.closeConn()
+        .then(() => console.log("🔌 Impressora desconectada."))
+        .catch((e) => console.error("Erro ao desconectar:", e));
+    }
+  }
+};
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -550,6 +616,15 @@ export default function Mesa() {
                     Fechar Mesa
                   </Text>
                 </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.closeButton,
+                    { backgroundColor: Colors.gold, marginTop: 12 },
+                  ]} // Chama a nova função
+                  onPress={imprimirPedidoAtual}
+                >
+                  <Text style={[styles.closeButtonText]}>Imprimir Pedido</Text>
+                </TouchableOpacity>
               </View>
             )}
           </>
@@ -578,7 +653,7 @@ export default function Mesa() {
               Deseja realmente fechar a mesa?
             </Text>
             <Text style={{ marginBottom: 20 }}>
-              Isso encerrará os pedidos e enviará o cupom para impressão.
+              Isso encerrará os pedidos para esta mesa.
             </Text>
             <TouchableOpacity
               style={[styles.closeButton, { backgroundColor: Colors.gold }]}
@@ -639,7 +714,9 @@ export default function Mesa() {
               ]}
               onPress={printCupom}
             >
-              <Text style={styles.closeButtonText}>Impressão</Text>
+              <Text style={[styles.closeButtonText, { color: Colors.black }]}>
+                Imprimir
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
