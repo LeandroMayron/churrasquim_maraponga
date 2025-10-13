@@ -15,6 +15,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../../../lib/supabase";
@@ -63,6 +64,13 @@ export default function Mesa() {
   const [printers, setPrinters] = useState([]);
   const [printerModalVisible, setPrinterModalVisible] = useState(false);
   const [isSearchingPrinters, setIsSearchingPrinters] = useState(false);
+
+  // Novos estados para divisão
+  const [modalEscolhaFechamento, setModalEscolhaFechamento] = useState(false);
+  const [modalDividirConta, setModalDividirConta] = useState(false);
+  const [modoDivisao, setModoDivisao] = useState("consumo"); // "consumo" | "pessoa"
+  const [numPessoas, setNumPessoas] = useState(2);
+  const [itemOwners, setItemOwners] = useState([]); // índice do pedido -> pessoaIndex (0..numPessoas-1)
 
   const buscarImpressoras = async () => {
     setIsSearchingPrinters(true);
@@ -152,6 +160,16 @@ export default function Mesa() {
     };
   }, [id]);
 
+  // Quando abrir modal de dividir, inicializa donos dos itens
+  useEffect(() => {
+    if (modalDividirConta) {
+      // Inicializa itemOwners com 0 (primeira pessoa) para cada item atual
+      setItemOwners(pedidoEnviado.map(() => 0));
+      // garante ao menos 2 pessoas
+      if (numPessoas < 1) setNumPessoas(2);
+    }
+  }, [modalDividirConta, pedidoEnviado]);
+
   // 🔹 Abrir modal e carregar menu
   const abrirModal = async () => {
     setLoading(true);
@@ -201,7 +219,6 @@ export default function Mesa() {
   };
 
   // 🔹 Enviar pedido para Supabase
-  // 🔹 Enviar pedido para Supabase (corrigido)
   const enviarPedido = async () => {
     const novoPedido = [...pedidoEnviado];
 
@@ -420,47 +437,49 @@ export default function Mesa() {
     return await QRCode.toDataURL(codigoPix, { margin: 1, scale: 4 });
   };
 
-const printCupom = async () => {
-  let printerConnection = null;
-  try {
-    console.log("🖨️ Iniciando impressão do recibo...");
+  const printCupom = async () => {
+    let printerConnection = null;
+    try {
+      console.log("🖨️ Iniciando impressão do recibo...");
 
-    await BLEPrinter.init();
+      await BLEPrinter.init();
 
-    const mac = await AsyncStorage.getItem("printer_mac");
-    if (!mac) {
-      alert("Nenhuma impressora configurada! Configure antes de imprimir.");
-      return;
-    }
+      const mac = await AsyncStorage.getItem("printer_mac");
+      if (!mac) {
+        alert("Nenhuma impressora configurada! Configure antes de imprimir.");
+        return;
+      }
 
-    printerConnection = await BLEPrinter.connectPrinter(mac);
-    if (!printerConnection)
-      throw new Error("Não foi possível conectar à impressora.");
+      printerConnection = await BLEPrinter.connectPrinter(mac);
+      if (!printerConnection)
+        throw new Error("Não foi possível conectar à impressora.");
 
-    console.log("✅ Conectado na impressora:", mac);
+      console.log("✅ Conectado na impressora:", mac);
 
-    const linhas = dadosParaImpressao
-      .map(
-        (item) =>
-          `<Text align='left'>${item.quantity}x ${removerAcentos(
-            item.name
-          )} | R$ ${(item.quantity * item.price).toFixed(2)}</Text><NewLine />`
-      )
-      .join("");
+      const linhas = dadosParaImpressao
+        .map(
+          (item) =>
+            `<Text align='left'>${item.quantity}x ${removerAcentos(
+              item.name
+            )} | R$ ${(item.quantity * item.price).toFixed(
+              2
+            )}</Text><NewLine />`
+        )
+        .join("");
 
-    const total = calcularTotal(dadosParaImpressao).toFixed(2);
+      const total = calcularTotal(dadosParaImpressao).toFixed(2);
 
-    // 🔹 Gera o código PIX e o QR Code base64
-    const codigoPix = gerarCodigoPix(
-      "06943961411", // 🟡 SUA CHAVE PIX AQUI
-      "CHURRASQUIM MARAPONGA",
-      "FORTALEZA",
-      parseFloat(total)
-    );
-    const qrBase64 = await gerarQrBase64(codigoPix);
+      // 🔹 Gera o código PIX e o QR Code base64
+      const codigoPix = gerarCodigoPix(
+        "06943961411", // 🟡 SUA CHAVE PIX AQUI
+        "CHURRASQUIM MARAPONGA",
+        "FORTALEZA",
+        parseFloat(total)
+      );
+      const qrBase64 = await gerarQrBase64(codigoPix);
 
-    // 🔹 Monta o layout de impressão com o QR Code
-    const payload = `
+      // 🔹 Monta o layout de impressão com o QR Code
+      const payload = `
       <Printout>
         <Text align='center' bold='1' fontWidth='2' fontHeight='2'>CHURRASQUIM</Text>
         <NewLine />
@@ -484,21 +503,89 @@ const printCupom = async () => {
       </Printout>
     `;
 
-    await BLEPrinter.print(payload);
-    console.log("🟢 Recibo enviado para impressão!");
-  } catch (err) {
-    console.error("❌ Erro ao imprimir recibo:", err);
-    alert("Falha ao imprimir: " + err.message);
-  } finally {
-    if (printerConnection) {
-      await delay(500);
-      BLEPrinter.closeConn()
-        .then(() => console.log("🔌 Impressora desconectada."))
-        .catch((e) => console.error("Erro ao desconectar:", e));
+      await BLEPrinter.print(payload);
+      console.log("🟢 Recibo enviado para impressão!");
+    } catch (err) {
+      console.error("❌ Erro ao imprimir recibo:", err);
+      alert("Falha ao imprimir: " + err.message);
+    } finally {
+      if (printerConnection) {
+        await delay(500);
+        BLEPrinter.closeConn()
+          .then(() => console.log("🔌 Impressora desconectada."))
+          .catch((e) => console.error("Erro ao desconectar:", e));
+      }
     }
-  }
-};
+  };
 
+  // --- Funções para divisão de conta (usando somente os dados em memoria: pedidoEnviado) ---
+
+  // Aumenta / diminui número de pessoas
+  const incrementarPessoas = () => setNumPessoas((n) => Math.min(20, n + 1));
+  const decrementarPessoas = () => setNumPessoas((n) => Math.max(1, n - 1));
+
+  // Cicla dono do item (0..numPessoas-1)
+  const cycleOwnerForItem = (index, direction = 1) => {
+    setItemOwners((prev) => {
+      const copy = [...prev];
+      const current = copy[index] ?? 0;
+      const next =
+        (((current + direction) % Math.max(1, numPessoas)) +
+          Math.max(1, numPessoas)) %
+        Math.max(1, numPessoas);
+      copy[index] = next;
+      return copy;
+    });
+  };
+
+  // Calcula totais por pessoa no modo consumo (soma de itens atribuídos)
+  const calcularTotaisPorConsumo = () => {
+    const totals = new Array(Math.max(1, numPessoas)).fill(0);
+    pedidoEnviado.forEach((item, idx) => {
+      const owner = itemOwners[idx] ?? 0;
+      const itemTotal = (item.quantity || 0) * (item.price || 0);
+      totals[owner] = (totals[owner] || 0) + itemTotal;
+    });
+    return totals;
+  };
+
+  // Calcula totais por pessoa no modo pessoa (divisão igualitária)
+  const calcularTotaisPorPessoa = () => {
+    const total = calcularTotal();
+    const per = total / Math.max(1, numPessoas);
+    return new Array(Math.max(1, numPessoas)).fill(per);
+  };
+
+  // Confirma divisão: mostra resumo e fecha modal
+  const confirmarDivisao = () => {
+    let totals = [];
+    if (modoDivisao === "consumo") {
+      totals = calcularTotaisPorConsumo();
+    } else {
+      totals = calcularTotaisPorPessoa();
+    }
+
+    // Monta resumo
+    const resumo = totals
+      .map((v, idx) => `Pessoa ${idx + 1}: R$ ${v.toFixed(2)}`)
+      .join("\n");
+
+    Alert.alert(
+      "Divisão da Conta",
+      `Resumo:\n\n${resumo}`,
+      [
+        {
+          text: "OK",
+          onPress: () => {
+            setModalDividirConta(false);
+            // Aqui você pode, se quiser, criar registros individuais no Supabase
+            // ou preparar impressão para cada pessoa.
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -606,7 +693,8 @@ const printCupom = async () => {
                         "Selecione a forma de pagamento antes de fechar a mesa."
                       );
                     } else {
-                      setConfirmModalVisible(true);
+                      // em vez de abrir confirmação direto, abre escolha Fechar/Dividir
+                      setModalEscolhaFechamento(true);
                     }
                   }}
                 >
@@ -638,6 +726,58 @@ const printCupom = async () => {
           />
         </Pressable>
       </View>
+
+      {/* Modal de Escolha de Fechamento */}
+      <Modal
+        visible={modalEscolhaFechamento}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setModalEscolhaFechamento(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmModalContent}>
+            <Text
+              style={{ fontSize: 18, fontWeight: "bold", marginBottom: 12 }}
+            >
+              Como deseja finalizar?
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.closeButton, { backgroundColor: Colors.gold }]}
+              onPress={() => {
+                setModalEscolhaFechamento(false);
+                setConfirmModalVisible(true);
+              }}
+            >
+              <Text style={[styles.closeButtonText, { color: Colors.black }]}>
+                Fechar Conta
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.closeButton,
+                { backgroundColor: Colors.acafrao, marginTop: 10 },
+              ]}
+              onPress={() => {
+                setModalEscolhaFechamento(false);
+                setModalDividirConta(true);
+                // itemOwners será inicializado pelo useEffect que observa modalDividirConta
+              }}
+            >
+              <Text style={styles.closeButtonText}>Dividir Conta</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.closeButton, { marginTop: 10 }]}
+              onPress={() => setModalEscolhaFechamento(false)}
+            >
+              <Text style={styles.closeButtonText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Modal de confirmação para fechar a mesa */}
       <Modal
         visible={confirmModalVisible}
@@ -674,6 +814,196 @@ const printCupom = async () => {
             >
               <Text style={styles.closeButtonText}>Cancelar</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de Dividir Conta */}
+      <Modal
+        visible={modalDividirConta}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalDividirConta(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.confirmModalContent,
+              { width: "92%", maxHeight: "90%" },
+            ]}
+          >
+            <Text
+              style={{ fontSize: 18, fontWeight: "bold", marginBottom: 12 }}
+            >
+              Dividir Conta
+            </Text>
+
+            {/* Modo de divisão */}
+            <View
+              style={{ flexDirection: "row", marginBottom: 12, width: "100%" }}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.optionButton,
+                  modoDivisao === "consumo" && styles.optionButtonActive,
+                ]}
+                onPress={() => setModoDivisao("consumo")}
+              >
+                <Text
+                  style={{
+                    color: modoDivisao === "consumo" ? Colors.black : "#555",
+                    fontWeight: modoDivisao === "consumo" ? "bold" : "normal",
+                  }}
+                >
+                  Por consumo
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.optionButton,
+                  modoDivisao === "pessoa" && styles.optionButtonActive,
+                ]}
+                onPress={() => setModoDivisao("pessoa")}
+              >
+                <Text
+                  style={{
+                    color: modoDivisao === "pessoa" ? Colors.black : "#555",
+                    fontWeight: modoDivisao === "pessoa" ? "bold" : "normal",
+                  }}
+                >
+                  Por pessoa
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Conteúdo do modo */}
+            <ScrollView style={{ width: "100%", marginBottom: 8 }}>
+              {pedidoEnviado.length === 0 ? (
+                <Text>Nenhum item na mesa.</Text>
+              ) : (
+                pedidoEnviado.map((item, idx) => {
+                  const itemTotal = (item.quantity || 0) * (item.price || 0);
+                  return (
+                    <View
+                      key={idx}
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: 8,
+                        paddingVertical: 6,
+                        borderBottomWidth: 0.5,
+                        borderColor: "#ddd",
+                      }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontWeight: "600" }}>
+                          {item.quantity}x {item.name}
+                        </Text>
+                        <Text>R$ {itemTotal.toFixed(2)}</Text>
+                      </View>
+
+                      {modoDivisao === "consumo" ? (
+                        <View style={{ alignItems: "center" }}>
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                            }}
+                          >
+                            <TouchableOpacity
+                              style={styles.smallBtn}
+                              onPress={() => cycleOwnerForItem(idx, -1)}
+                            >
+                              <Text style={{ fontWeight: "700" }}>‹</Text>
+                            </TouchableOpacity>
+                            <View style={{ paddingHorizontal: 8 }}>
+                              <Text>Pessoa {(itemOwners[idx] ?? 0) + 1}</Text>
+                            </View>
+                            <TouchableOpacity
+                              style={styles.smallBtn}
+                              onPress={() => cycleOwnerForItem(idx, 1)}
+                            >
+                              <Text style={{ fontWeight: "700" }}>›</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ) : null}
+                    </View>
+                  );
+                })
+              )}
+            </ScrollView>
+
+            {/* Painel de pessoas / resumo */}
+            <View style={{ width: "100%", alignItems: "center" }}>
+              {modoDivisao === "pessoa" ? (
+                <View style={{ alignItems: "center", width: "100%" }}>
+                  <Text style={{ marginBottom: 8 }}>Número de pessoas:</Text>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      marginBottom: 8,
+                    }}
+                  >
+                    <TouchableOpacity
+                      style={styles.smallBtn}
+                      onPress={decrementarPessoas}
+                    >
+                      <Text style={{ fontWeight: "700" }}>-</Text>
+                    </TouchableOpacity>
+                    <Text style={{ marginHorizontal: 12, fontWeight: "600" }}>
+                      {numPessoas}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.smallBtn}
+                      onPress={incrementarPessoas}
+                    >
+                      <Text style={{ fontWeight: "700" }}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <Text>
+                    Cada pessoa paga:{" "}
+                    <Text style={{ fontWeight: "700" }}>
+                      R$ {(calcularTotaisPorPessoa()[0] || 0).toFixed(2)}
+                    </Text>
+                  </Text>
+                </View>
+              ) : (
+                <View style={{ width: "100%", alignItems: "center" }}>
+                  <Text style={{ marginBottom: 8 }}>
+                    Totais por pessoa (consumo):
+                  </Text>
+                  {calcularTotaisPorConsumo().map((v, i) => (
+                    <Text key={i}>
+                      Pessoa {i + 1}: R$ {v.toFixed(2)}
+                    </Text>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {/* Botões */}
+            <View style={{ marginTop: 14, width: "100%" }}>
+              <TouchableOpacity
+                style={[styles.closeButton, { backgroundColor: Colors.gold }]}
+                onPress={confirmarDivisao}
+              >
+                <Text style={[styles.closeButtonText, { color: Colors.black }]}>
+                  Confirmar divisão
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.closeButton, { marginTop: 10 }]}
+                onPress={() => setModalDividirConta(false)}
+              >
+                <Text style={styles.closeButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -1002,5 +1332,26 @@ const styles = StyleSheet.create({
     padding: 20,
     width: "80%",
     alignItems: "center",
+  },
+
+  /* Novos estilos para divisão */
+  optionButton: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    marginHorizontal: 4,
+  },
+  optionButtonActive: {
+    backgroundColor: Colors.gold,
+    borderColor: Colors.gold,
+  },
+  smallBtn: {
+    backgroundColor: Colors.acafrao,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
   },
 });
