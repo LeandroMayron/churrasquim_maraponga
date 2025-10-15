@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Alert } from "react-native";
 import { supabase } from "@/lib/supabase";
-import { printRecibo } from "./useBluetoothPrinter";
+import { printRecibo } from "./useBluetoothPrinter.cjs";
 
 export function usePagamento(mesaId) {
   const [loading, setLoading] = useState(false);

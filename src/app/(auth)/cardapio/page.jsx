@@ -1,4 +1,4 @@
-import Colors from "@/constants/Colors";
+import Colors from "../../../../constants/Colors";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,

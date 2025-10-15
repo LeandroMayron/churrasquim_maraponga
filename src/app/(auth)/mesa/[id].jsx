@@ -1,4 +1,4 @@
-import Colors from "@/constants/Colors";
+import Colors from "../../../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
@@ -16,9 +16,9 @@ import ModalAdicionarPessoa from "./components/ModalAdicionarPessoa";
 import ModalDetalhesPedido from "./components/ModalDetalhesPedido";
 import ModalDividirConta from "./components/ModalDividirConta";
 
-import { useMesa } from "./hooks/useMesas";
-import { usePagamento } from "./hooks/usePagamentos";
-import { usePedidos } from "./hooks/usePedidos";
+import { useMesa } from "./hooks/useMesas.mjs";
+import { usePagamento } from "./hooks/usePagamentos.mjs";
+import { usePedidos } from "./hooks/usePedidos.mjs";
 
 export default function Mesa() {
   const { id: mesaId } = useLocalSearchParams();

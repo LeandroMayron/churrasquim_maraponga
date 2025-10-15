@@ -1,5 +1,5 @@
 // src/app/_layout.jsx
-import Colors from "@/constants/Colors";
+import Colors from "../../constants/Colors";
 import { supabase } from "@/lib/supabase";
 import { Stack, router } from "expo-router";
 import { useEffect, useState } from "react";
