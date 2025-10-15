@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Alert } from "react-native";
-import { supabase } from "../../../lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { printRecibo } from "./useBluetoothPrinter";
 
 export function usePagamento(mesaId) {

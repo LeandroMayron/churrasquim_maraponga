@@ -1,5 +1,5 @@
 import { BLEPrinter } from "@xyzsola/react-native-thermal-printer";
-import { supabase } from "../../../lib/supabase";
+import { supabase } from "@/lib/supabase";
 
 export async function printRecibo(mesaId) {
   try {
