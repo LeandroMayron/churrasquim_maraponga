@@ -1,23 +1,24 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams } from "expo-router";
+
+import ListaPedidos from "@/components/ListaPedidos";
+import MesaHeader from "@/components/MesaHeader";
+import ModalAdicionarPessoa from "@/components/ModalAdicionarPessoa";
+import ModalDetalhesPedido from "@/components/ModalDetalhesPedido";
+import ModalDividirConta from "@/components/ModalDividirConta";
+
+import { useMesa } from "@/hooks/useMesas.mjs";
+import { usePedidos } from "@/hooks/usePedidos.mjs";
+import { usePagamento } from "@/hooks/usePagamentos.mjs";
 
 import Colors from "@/constants/Colors";
-import { useLocalSearchParams } from "expo-router";
-import ListaPedidos from "./components/ListaPedidos";
-import MesaHeader from "./components/MesaHeader";
-import ModalAdicionarPessoa from "./components/ModalAdicionarPessoa";
-import ModalDetalhesPedido from "./components/ModalDetalhesPedido";
-import ModalDividirConta from "./components/ModalDividirConta";
-
-import { useMesa } from "./hooks/useMesas.mjs";
-import { usePagamento } from "./hooks/usePagamentos.mjs";
-import { usePedidos } from "./hooks/usePedidos.mjs";
 
 export default function Mesa() {
   const { id: mesaId } = useLocalSearchParams();
 
-  const { pedidos, loading } = usePedidos(mesaId); // Hook atualizado
+  const { pedidos, loading } = usePedidos(mesaId);
   const { pessoas, adicionarPessoa } = useMesa(mesaId);
   const { fecharMesa } = usePagamento(mesaId);
 
@@ -33,20 +34,21 @@ export default function Mesa() {
 
   return (
     <View style={styles.container}>
-      <MesaHeader mesaId={mesaId} />
-
       <ListaPedidos
         pedidos={pedidos}
         onDetalhes={handleDetalhes}
         ListHeaderComponent={
-          <View style={styles.pessoasContainer}>
-            <Text style={styles.sectionTitle}>Pessoas na mesa:</Text>
-            {pessoas.map((p) => (
-              <Text key={p.id} style={styles.pessoaNome}>
-                - {p.nome}
-              </Text>
-            ))}
-          </View>
+          <>
+            <MesaHeader mesaId={mesaId} />
+            <View style={styles.pessoasContainer}>
+              <Text style={styles.sectionTitle}>Pessoas na mesa:</Text>
+              {pessoas.map((p) => (
+                <Text key={p.id} style={styles.pessoaNome}>
+                  - {p.nome}
+                </Text>
+              ))}
+            </View>
+          </>
         }
       />
 
@@ -78,6 +80,7 @@ export default function Mesa() {
         <TouchableOpacity
           style={[styles.button, { backgroundColor: Colors.success }]}
           onPress={() => setModalDividirVisible(true)}
+          disabled={loading}
         >
           <Ionicons name="cash-outline" size={20} color="white" />
           <Text style={styles.buttonText}>
@@ -109,9 +112,5 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
   },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    marginLeft: 8,
-  },
+  buttonText: { color: "#fff", fontWeight: "bold", marginLeft: 8 },
 });

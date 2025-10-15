@@ -9,7 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
-import Header from "../../../components/header/index";
+import Header from "@/components/header/index";
 
 const MENU_URL =
   "https://6644-fontend.github.io/menu-churrasquinho-maraponga/menu.json";

@@ -1,29 +1,50 @@
 import React, { useState } from "react";
-import { Modal, View, TextInput, Button, Text, StyleSheet } from "react-native";
+import {
+  Modal,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+} from "react-native";
+import Colors from "@/constants/Colors";
 
 export default function ModalAdicionarPessoa({ visible, onClose, onAdd }) {
   const [nome, setNome] = useState("");
 
   const handleAdd = () => {
-    if (!nome) return;
-    onAdd(nome);
-    setNome("");
-    onClose();
+    if (nome.trim() !== "") {
+      onAdd(nome);
+      setNome("");
+      onClose();
+    }
   };
 
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.overlay}>
-        <View style={styles.modal}>
+        <View style={styles.container}>
           <Text style={styles.title}>Adicionar Pessoa</Text>
           <TextInput
-            style={styles.input}
             placeholder="Nome"
             value={nome}
             onChangeText={setNome}
+            style={styles.input}
           />
-          <Button title="Adicionar" onPress={handleAdd} />
-          <Button title="Cancelar" color="red" onPress={onClose} />
+          <View style={styles.buttons}>
+            <TouchableOpacity
+              onPress={handleAdd}
+              style={[styles.button, { backgroundColor: Colors.primary }]}
+            >
+              <Text style={styles.buttonText}>Adicionar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={onClose}
+              style={[styles.button, { backgroundColor: Colors.danger }]}
+            >
+              <Text style={styles.buttonText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
@@ -34,23 +55,24 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: "center",
-    backgroundColor: "#000000aa",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
-  modal: {
-    margin: 20,
+  container: {
+    backgroundColor: "#fff",
     padding: 20,
-    backgroundColor: "white",
     borderRadius: 10,
+    width: "80%",
   },
-  title: { 
-    fontWeight: "bold", 
-    marginBottom: 10, 
-    fontSize: 16 },
+  title: { fontSize: 18, fontWeight: "bold", marginBottom: 12 },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
+    borderRadius: 6,
     padding: 8,
-    marginBottom: 10,
-    borderRadius: 5,
+    marginBottom: 12,
   },
+  buttons: { flexDirection: "row", justifyContent: "space-between" },
+  button: { padding: 10, borderRadius: 6 },
+  buttonText: { color: "#fff", fontWeight: "bold" },
 });

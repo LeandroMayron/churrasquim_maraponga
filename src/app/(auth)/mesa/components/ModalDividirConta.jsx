@@ -1,17 +1,29 @@
 import React from "react";
-import { Modal, View, Text, Button, StyleSheet } from "react-native";
+import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import Colors from "@/constants/Colors";
 
 export default function ModalDividirConta({ visible, onClose, onFecharMesa }) {
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.overlay}>
-        <View style={styles.modal}>
+        <View style={styles.container}>
           <Text style={styles.title}>Fechar Mesa</Text>
-          <Text style={styles.text}>
-            Deseja fechar a mesa e gerar o recibo?
-          </Text>
-          <Button title="Fechar Mesa" onPress={onFecharMesa} />
-          <Button title="Cancelar" color="red" onPress={onClose} />
+          <Text>Deseja fechar a mesa e dividir a conta?</Text>
+
+          <View style={styles.buttons}>
+            <TouchableOpacity
+              onPress={onFecharMesa}
+              style={[styles.button, { backgroundColor: Colors.success }]}
+            >
+              <Text style={styles.buttonText}>Fechar Mesa</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={onClose}
+              style={[styles.button, { backgroundColor: Colors.danger }]}
+            >
+              <Text style={styles.buttonText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
@@ -22,21 +34,27 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: "center",
-    backgroundColor: "#000000aa",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
-  modal: {
-    margin: 20,
+  container: {
+    backgroundColor: "#fff",
     padding: 20,
-    backgroundColor: "white",
     borderRadius: 10,
+    width: "80%",
   },
-  title: {
-    fontWeight: "bold",
-    marginBottom: 10,
-    fontSize: 16,
+  title: { fontSize: 18, fontWeight: "bold", marginBottom: 12 },
+  buttons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
   },
-  text: {
-    marginBottom: 20,
-    fontSize: 14,
+  button: {
+    padding: 10,
+    borderRadius: 6,
+    flex: 1,
+    marginHorizontal: 4,
+    alignItems: "center",
   },
+  buttonText: { color: "#fff", fontWeight: "bold" },
 });

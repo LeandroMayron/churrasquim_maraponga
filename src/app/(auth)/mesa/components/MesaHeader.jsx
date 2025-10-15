@@ -1,7 +1,7 @@
+import React from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Colors from "@/constants/Colors";
 
 export default function MesaHeader({ mesaId }) {
@@ -25,9 +25,5 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: Colors.background,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: Colors.text,
-  },
+  title: { fontSize: 18, fontWeight: "bold", color: Colors.text },
 });

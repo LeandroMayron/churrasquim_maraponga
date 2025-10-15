@@ -22,7 +22,7 @@ export default function ListaPedidos({
           <View style={styles.item}>
             <Text style={styles.nome}>{item.nome}</Text>
             <Text style={styles.info}>Qtd: {item.quantidade}</Text>
-            <Text style={styles.info}>R$ {item.preco.toFixed(2)}</Text>
+            <Text style={styles.info}>R$ {(item.preco || 0).toFixed(2)}</Text>
           </View>
         </TouchableOpacity>
       )}
@@ -30,18 +30,8 @@ export default function ListaPedidos({
   );
 }
 
-
 const styles = StyleSheet.create({
-  item: { 
-    padding: 12, 
-    borderBottomWidth: 1, 
-    borderColor: "#ccc" 
-  },
-  nome: { 
-    fontWeight: "bold", 
-    fontSize: 16 
-  },
-  info: { 
-    fontSize: 14 
-  },
+  item: { padding: 12, borderBottomWidth: 1, borderColor: "#ccc" },
+  nome: { fontWeight: "bold", fontSize: 16 },
+  info: { fontSize: 14 },
 });

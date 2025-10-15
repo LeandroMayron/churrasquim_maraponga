@@ -2,7 +2,7 @@ import Colors from "@/constants/Colors";
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Header from "../../../components/header/index";
+import Header from "@/components/header/index";
 import { supabase } from "@/lib/supabase"; // ajuste o caminho se necessário
 
 export default function Logout() {
