@@ -1,13 +1,13 @@
-import Colors from "../../../../constants/Colors";
+import Colors from "@/constants/Colors";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   SafeAreaView,
   StyleSheet,
   Text,
   View,
-  FlatList,
 } from "react-native";
 import Header from "../../../components/header/index";
 
@@ -52,7 +52,9 @@ const Cardapio = () => {
         <View style={styles.item} key={idx}>
           <Text style={styles.text}>{i.name}</Text>
           <Text style={styles.preco}>
-            R$ {i.price.toFixed(2).replace(".", ",")}
+            {typeof i.price === "number"
+              ? `R$ ${i.price.toFixed(2).replace(".", ",")}`
+              : "Preço indisponível"}
           </Text>
         </View>
       ))}

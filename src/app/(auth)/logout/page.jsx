@@ -1,4 +1,4 @@
-import Colors from "../../../../constants/Colors";
+import Colors from "@/constants/Colors";
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";

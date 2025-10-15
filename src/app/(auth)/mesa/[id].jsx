@@ -1,14 +1,8 @@
-import Colors from "../../../../constants/Colors";
-import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
+import Colors from "@/constants/Colors";
 import { useLocalSearchParams } from "expo-router";
 import ListaPedidos from "./components/ListaPedidos";
 import MesaHeader from "./components/MesaHeader";
@@ -23,9 +17,9 @@ import { usePedidos } from "./hooks/usePedidos.mjs";
 export default function Mesa() {
   const { id: mesaId } = useLocalSearchParams();
 
-  const { pedidos } = usePedidos(mesaId);
+  const { pedidos, loading } = usePedidos(mesaId); // Hook atualizado
   const { pessoas, adicionarPessoa } = useMesa(mesaId);
-  const { fecharMesa, loading } = usePagamento(mesaId);
+  const { fecharMesa } = usePagamento(mesaId);
 
   const [modalAdicionarVisible, setModalAdicionarVisible] = useState(false);
   const [modalDividirVisible, setModalDividirVisible] = useState(false);
@@ -41,18 +35,20 @@ export default function Mesa() {
     <View style={styles.container}>
       <MesaHeader mesaId={mesaId} />
 
-      <ScrollView style={styles.scroll}>
-        <ListaPedidos pedidos={pedidos} onDetalhes={handleDetalhes} />
-
-        <View style={styles.pessoasContainer}>
-          <Text style={styles.sectionTitle}>Pessoas na mesa:</Text>
-          {pessoas.map((p) => (
-            <Text key={p.id} style={styles.pessoaNome}>
-              - {p.nome}
-            </Text>
-          ))}
-        </View>
-      </ScrollView>
+      <ListaPedidos
+        pedidos={pedidos}
+        onDetalhes={handleDetalhes}
+        ListHeaderComponent={
+          <View style={styles.pessoasContainer}>
+            <Text style={styles.sectionTitle}>Pessoas na mesa:</Text>
+            {pessoas.map((p) => (
+              <Text key={p.id} style={styles.pessoaNome}>
+                - {p.nome}
+              </Text>
+            ))}
+          </View>
+        }
+      />
 
       <ModalAdicionarPessoa
         visible={modalAdicionarVisible}
@@ -82,7 +78,6 @@ export default function Mesa() {
         <TouchableOpacity
           style={[styles.button, { backgroundColor: Colors.success }]}
           onPress={() => setModalDividirVisible(true)}
-          disabled={loading}
         >
           <Ionicons name="cash-outline" size={20} color="white" />
           <Text style={styles.buttonText}>
@@ -96,8 +91,7 @@ export default function Mesa() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
-  scroll: { flex: 1, paddingHorizontal: 16 },
-  pessoasContainer: { marginTop: 20 },
+  pessoasContainer: { marginTop: 20, paddingHorizontal: 16 },
   sectionTitle: { fontSize: 16, fontWeight: "bold", marginBottom: 8 },
   pessoaNome: { fontSize: 14, marginBottom: 4 },
   buttonsContainer: {

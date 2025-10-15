@@ -3,15 +3,12 @@
   "compilerOptions": {
     "jsx": "react",
     "strict": true,
+    "baseUrl": "./",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["src/*"]
     }
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "src/app/(auth)/mesa/[id].jsx"
-, "src/app/index.jsx", "src/app/_layout.jsx", "src/app/(painel)/profile/page.jsx"  ]
+    "src/**/*.{ts,tsx,js,jsx}"
+  ]
 }

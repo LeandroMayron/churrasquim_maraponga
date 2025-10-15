@@ -7,11 +7,16 @@ import {
   StyleSheet,
 } from "react-native";
 
-export default function ListaPedidos({ pedidos, onDetalhes }) {
+export default function ListaPedidos({
+  pedidos,
+  onDetalhes,
+  ListHeaderComponent,
+}) {
   return (
     <FlatList
       data={pedidos}
       keyExtractor={(item) => item.id.toString()}
+      ListHeaderComponent={ListHeaderComponent}
       renderItem={({ item }) => (
         <TouchableOpacity onPress={() => onDetalhes(item)}>
           <View style={styles.item}>
@@ -24,6 +29,7 @@ export default function ListaPedidos({ pedidos, onDetalhes }) {
     />
   );
 }
+
 
 const styles = StyleSheet.create({
   item: { 
