@@ -1,9 +1,9 @@
 // src/app/_layout.jsx
+import Colors from "@/constants/Colors";
+import { supabase } from "@/lib/supabase";
 import { Stack, router } from "expo-router";
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
 import { ActivityIndicator, View } from "react-native";
-import Colors from "@/constants/Colors";
 
 export default function MainLayout() {
   const [loading, setLoading] = useState(true);

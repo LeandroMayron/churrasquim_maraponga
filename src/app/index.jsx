@@ -1,4 +1,5 @@
 import Colors from "@/constants/Colors";
+import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, router } from "expo-router";
 import { MotiView } from "moti";
@@ -19,7 +20,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { supabase } from "../lib/supabase";
 
 export default function Login() {
   const [email, setEmail] = useState("");
