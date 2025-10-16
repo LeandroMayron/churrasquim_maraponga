@@ -1,4 +1,4 @@
-import Colors from "@/constants/Colors";
+import Colors from "../../../../constants/Colors";
 import { AntDesign } from "@expo/vector-icons";
 import React, { useState, useEffect } from "react";
 import {
