@@ -32,7 +32,8 @@ export default StyleSheet.create({
   },
 
   // Lista de pedidos
-  pedidoContainer: { marginTop: 30, width: "90%", alignItems: "center" },
+  pedidoContainer: { marginTop: 30, width: "90%" },
+  pedidoContentContainer: { alignItems: "center", paddingVertical: 10 },
   pedidoTitulo: {
     color: Colors.gold,
     fontSize: 20,
@@ -98,6 +99,8 @@ export default StyleSheet.create({
     width: "100%",
     maxHeight: "90%",
   },
+  modalContentScroll: { paddingVertical: 10, alignItems: "center" }, // Para ScrollViews dentro de modais
+
   confirmModalContent: {
     backgroundColor: Colors.white,
     borderRadius: 12,
@@ -179,8 +182,4 @@ export default StyleSheet.create({
     backgroundColor: Colors.gold,
     borderColor: Colors.gold,
   },
-
-  // Modal impressora
-  itemText: { color: Colors.black, fontWeight: "bold", fontSize: 15 },
-  itemPrice: { color: Colors.black, fontWeight: "600" },
 });
