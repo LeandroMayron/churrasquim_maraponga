@@ -4,12 +4,13 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   Pressable,
+  ScrollView,
   ActivityIndicator,
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import Colors from "../../../../constants/Colors";
 import supabase from "../../../lib/supabase";
 
@@ -22,10 +23,10 @@ import ModalImpressao from "./components/modalImpressao";
 import ModalImpressora from "./components/modalImpressora";
 import ModalItens from "./components/modalItens";
 
-export default function Mesa({ id, router }) {
-  // ------------------------
-  // ESTADOS PRINCIPAIS
-  // ------------------------
+export default function Mesa({ id }) {
+  const router = useRouter();
+
+  // Estados principais
   const [modoMesa, setModoMesa] = useState(null);
   const [pedidoEnviado, setPedidoEnviado] = useState([]);
   const [mesaFechada, setMesaFechada] = useState(false);
@@ -35,63 +36,52 @@ export default function Mesa({ id, router }) {
 
   // Pessoas / divisão de conta
   const [pessoas, setPessoas] = useState([]);
+  const [novoNomePessoa, setNovoNomePessoa] = useState("");
+  const [isLoadingPessoas, setIsLoadingPessoas] = useState(false);
   const [pedidosPorPessoa, setPedidosPorPessoa] = useState({});
   const [modoDivisao, setModoDivisao] = useState("consumo");
   const [numPessoas, setNumPessoas] = useState(1);
+  const [itemOwners, setItemOwners] = useState([]);
 
   // Modais
   const [modalEscolhaFechamento, setModalEscolhaFechamento] = useState(false);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [modalDividirConta, setModalDividirConta] = useState(false);
   const [modalImpressaoVisivel, setModalImpressaoVisivel] = useState(false);
   const [printerModalVisible, setPrinterModalVisible] = useState(false);
   const [printers, setPrinters] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
 
-  // Cardápio
+  // Menu JSON
   const [menuData, setMenuData] = useState({});
   const [loadingMenu, setLoadingMenu] = useState(true);
+
+  useEffect(() => {
+    fetch(
+      "https://6644-fontend.github.io/menu-churrasquinho-maraponga/menu.json"
+    )
+      .then((res) => res.json())
+      .then((data) => setMenuData(data))
+      .catch((err) => console.error("Erro ao carregar menu:", err))
+      .finally(() => setLoadingMenu(false));
+  }, []);
 
   // ------------------------
   // FUNÇÕES AUXILIARES
   // ------------------------
-  useEffect(() => {
-    const fetchMenu = async () => {
-      try {
-        const response = await fetch(
-          "https://6644-fontend.github.io/menu-churrasquinho-maraponga/menu.json"
-        );
-        const json = await response.json();
-        setMenuData(json);
-      } catch (error) {
-        console.error("Erro ao carregar o cardápio:", error);
-        Alert.alert("Erro", "Não foi possível carregar o cardápio.");
-      } finally {
-        setLoadingMenu(false);
-      }
-    };
-
-    fetchMenu();
-  }, []);
-
   const calcularTotal = (pedidos) =>
     (pedidos || []).reduce(
       (acc, item) => acc + (item.quantity || 0) * (item.price || 0),
       0
     );
 
-  const calcularTotaisPorConsumo = () => {
-    if (!Array.isArray(pedidoEnviado)) return [];
-    const totais = {};
-    pedidoEnviado.forEach((pedido) => {
-      const pessoa = pedido.pessoa_nome || "Mesa";
-      const total = Number(pedido.total) || 0;
-      totais[pessoa] = (totais[pessoa] || 0) + total;
-    });
-    return Object.values(totais);
+  const calcularTotalPessoa = (pessoaId) => {
+    const itens = pedidosPorPessoa[pessoaId] || [];
+    return calcularTotal(itens);
   };
 
-  const confirmarDivisao = async () => {
-    Alert.alert("Sucesso", "Divisão confirmada com sucesso!");
+  const confirmarDivisao = () => {
+    Alert.alert("Sucesso", "Divisão confirmada!");
     setModalDividirConta(false);
   };
 
@@ -101,35 +91,33 @@ export default function Mesa({ id, router }) {
 
   const fecharMesa = async () => {
     try {
-      const { data: pedidoAberto, error: fetchError } = await supabase
+      const { data: pedidoAberto, error } = await supabase
         .from("pedidos")
         .select("id, itens")
         .eq("mesa_id", id)
-        .eq("pessoa_id", null)
         .eq("status", "aberto")
         .limit(1)
         .maybeSingle();
 
-      if (fetchError || !pedidoAberto) {
-        alert("Nenhum pedido aberto encontrado para esta mesa.");
+      if (error || !pedidoAberto) {
+        alert("Nenhum pedido aberto encontrado.");
         return;
       }
 
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from("pedidos")
         .update({ status: "fechado", pagamento: formaPagamento })
         .eq("id", pedidoAberto.id);
 
-      if (!error) {
+      if (!updateError) {
         setMesaFechada(true);
         setPedidoEnviado([]);
-        setModalEscolhaFechamento(false);
       } else {
-        alert("Erro ao fechar a mesa. Tente novamente.");
+        alert("Erro ao fechar mesa.");
       }
     } catch (err) {
-      console.error("Erro inesperado ao fechar a mesa:", err);
-      alert("Erro inesperado. Tente novamente.");
+      console.error("Erro inesperado:", err);
+      alert("Erro inesperado.");
     }
   };
 
@@ -166,7 +154,10 @@ export default function Mesa({ id, router }) {
       )}
 
       {/* Lista de pedidos */}
-      <ScrollView style={styles.pedidoContainer}>
+      <ScrollView
+        style={styles.pedidoContainer}
+        contentContainerStyle={{ alignItems: "center" }}
+      >
         {pedidoEnviado.length === 0 ? (
           <Text style={styles.emptyText}>
             {mesaFechada ? "Mesa já fechada." : "Nenhum pedido ainda."}
@@ -211,8 +202,7 @@ export default function Mesa({ id, router }) {
       <ModalFechamento
         visible={modalEscolhaFechamento}
         setVisible={setModalEscolhaFechamento}
-        setConfirmModalVisible={() => {}}
-        setModalDividirConta={setModalDividirConta}
+        fecharMesa={fecharMesa}
       />
       <ModalDividirConta
         visible={modalDividirConta}
@@ -229,8 +219,6 @@ export default function Mesa({ id, router }) {
         setVisible={setModalImpressaoVisivel}
         dadosParaImpressao={dadosParaImpressao}
         calcularTotal={calcularTotal}
-        selectedPersonId={selectedPersonId}
-        setSelectedPersonId={setSelectedPersonId}
       />
       <ModalImpressora
         visible={printerModalVisible}

@@ -2,7 +2,6 @@ import { StyleSheet } from "react-native";
 import Colors from "../../../../../constants/Colors";
 
 export default StyleSheet.create({
-  // Container principal
   container: {
     flex: 1,
     paddingTop: 50,
@@ -15,8 +14,6 @@ export default StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 16,
   },
-
-  // Botões principais
   button: {
     backgroundColor: Colors.acafrao,
     paddingHorizontal: 24,
@@ -25,64 +22,26 @@ export default StyleSheet.create({
     elevation: 3,
     marginBottom: 10,
   },
-  buttonText: {
-    color: Colors.white,
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-
-  // Lista de pedidos
-  pedidoContainer: { marginTop: 30, width: "90%" },
-  pedidoContentContainer: { alignItems: "center", paddingVertical: 10 },
-  pedidoTitulo: {
-    color: Colors.gold,
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
+  buttonText: { color: Colors.white, fontWeight: "bold", fontSize: 16 },
+  pedidoContainer: { marginTop: 30, width: "90%"},
   pedidoItemContainer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 10,
   },
-  pedidoItem: {
-    color: Colors.white,
-    fontSize: 16,
-    marginVertical: 4,
-  },
+  pedidoItem: { color: Colors.white, fontSize: 16, marginVertical: 4 },
   emptyText: { color: Colors.gray, fontStyle: "italic" },
-
-  totalContainer: {
-    marginTop: 12,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderColor: Colors.gold,
-    width: "100%",
-    alignItems: "center",
-  },
-  totalText: { color: Colors.gold, fontSize: 18, fontWeight: "bold" },
-  totalValue: {
-    color: Colors.white,
-    fontSize: 20,
-    fontWeight: "bold",
-    marginTop: 4,
-  },
-
-  // Botão voltar
   backButton: {
     position: "absolute",
     width: 40,
     height: 40,
     top: 0,
     left: 0,
-    alignSelf: "center",
     borderRadius: 8,
     zIndex: 0,
     backgroundColor: Colors.acafrao,
   },
-
-  // Modal overlay
   modalOverlay: {
     flex: 1,
     backgroundColor: "#000000aa",
@@ -90,8 +49,6 @@ export default StyleSheet.create({
     alignItems: "center",
     padding: 20,
   },
-
-  // Modal base
   modalContent: {
     backgroundColor: Colors.white,
     borderRadius: 12,
@@ -99,8 +56,6 @@ export default StyleSheet.create({
     width: "100%",
     maxHeight: "90%",
   },
-  modalContentScroll: { paddingVertical: 10, alignItems: "center" }, // Para ScrollViews dentro de modais
-
   confirmModalContent: {
     backgroundColor: Colors.white,
     borderRadius: 12,
@@ -115,8 +70,6 @@ export default StyleSheet.create({
     marginBottom: 12,
     textAlign: "center",
   },
-
-  // Categorias de itens
   categoriaContainer: { marginBottom: 16 },
   categoriaTitulo: {
     color: Colors.acafrao,
@@ -125,8 +78,6 @@ export default StyleSheet.create({
     marginBottom: 8,
     textTransform: "capitalize",
   },
-
-  // Itens
   itemContainer: {
     backgroundColor: Colors.gold,
     padding: 10,
@@ -138,8 +89,6 @@ export default StyleSheet.create({
   },
   itemText: { color: Colors.black, fontWeight: "bold", fontSize: 15 },
   itemPrice: { color: Colors.black, fontWeight: "600" },
-
-  // Controle de quantidade
   quantityControl: { flexDirection: "row", alignItems: "center" },
   qtyButton: {
     backgroundColor: Colors.acafrao,
@@ -149,8 +98,6 @@ export default StyleSheet.create({
   },
   qtyButtonText: { color: Colors.white, fontWeight: "bold", fontSize: 18 },
   quantityText: { color: Colors.black, fontWeight: "bold", fontSize: 16 },
-
-  // Botões gerais
   closeButton: {
     marginTop: 16,
     backgroundColor: Colors.acafrao,
@@ -167,8 +114,6 @@ export default StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 6,
   },
-
-  // Modal divisão de conta
   optionButton: {
     flex: 1,
     paddingVertical: 8,

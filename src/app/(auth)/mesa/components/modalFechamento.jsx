@@ -3,56 +3,39 @@ import { Modal, View, Text, TouchableOpacity } from "react-native";
 import styles from "./styles";
 import Colors from "../../../../../constants/Colors";
 
-export default function ModalFechamento({
-  visible,
-  setVisible,
-  setConfirmModalVisible,
-  setModalDividirConta,
-}) {
+export default function ModalFechamento({ visible, setVisible, onConfirm }) {
   return (
-    <Modal
-      visible={visible}
-      animationType="fade"
-      transparent={true}
-      onRequestClose={() => setVisible(false)}
-    >
+    <Modal visible={visible} transparent animationType="slide">
       <View style={styles.modalOverlay}>
-        <View style={styles.confirmModalContent}>
-          <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 12 }}>
-            Como deseja finalizar?
-          </Text>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Fechar Mesa?</Text>
 
-          <TouchableOpacity
-            style={[styles.closeButton, { backgroundColor: Colors.gold }]}
-            onPress={() => {
-              setVisible(false);
-              setConfirmModalVisible(true);
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-around",
+              marginTop: 20,
             }}
           >
-            <Text style={[styles.closeButtonText, { color: Colors.black }]}>
-              Fechar Conta
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.closeButton, { backgroundColor: Colors.acafrao }]}
+              onPress={() => setVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Cancelar</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.closeButton,
-              { backgroundColor: Colors.acafrao, marginTop: 10 },
-            ]}
-            onPress={() => {
-              setVisible(false);
-              setModalDividirConta(true);
-            }}
-          >
-            <Text style={styles.closeButtonText}>Dividir Conta</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.closeButton, { marginTop: 10 }]}
-            onPress={() => setVisible(false)}
-          >
-            <Text style={styles.closeButtonText}>Cancelar</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.closeButton, { backgroundColor: Colors.gold }]}
+              onPress={() => {
+                onConfirm();
+                setVisible(false);
+              }}
+            >
+              <Text style={[styles.closeButtonText, { color: Colors.black }]}>
+                Confirmar
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
