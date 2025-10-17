@@ -1,4 +1,4 @@
-import Colors from "@/constants/Colors";
+import Colors from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, router } from "expo-router";
 import { MotiView } from "moti";
